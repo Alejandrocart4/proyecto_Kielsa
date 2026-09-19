@@ -2,6 +2,10 @@
 
 Aplicación web que obtiene sucursales de Farmacias Kielsa desde Google Places, las muestra como nodos sobre Google Maps y conecta cada una con sus vecinas. Permite elegir origen y destino para hallar el camino más corto del grafo con el algoritmo de Dijkstra.
 
+## Avance 1 de Matemática Discreta
+
+El [informe editable](AVANCE_1.md) y el [PDF para entregar](output/pdf/Avance_1_Kielsa_SPS.pdf) reúnen el inventario oficial de 55 sucursales, una muestra de 12 nodos, 14 conexiones viales medidas en Google Maps y tres zonas candidatas para la sede técnica. Los CSV de [sucursales](datos/sucursales_kielsa_sps_2026-09-18.csv) y [distancias](datos/distancias_google_maps_2026-09-18.csv) conservan los datos y enlaces de verificación. Completa los integrantes y la sección antes de entregar.
+
 ## Preparación
 
 1. Crea un proyecto en [Google Cloud Console](https://console.cloud.google.com/) con facturación y habilita **Maps JavaScript API** y **Places API (New)**.
