@@ -20,6 +20,10 @@ La aplicación revisa conexión, grado mínimo 2, Dirac y Ore. Dirac y Ore son s
 
 El mapa consulta Google Maps Routes para dibujar los tramos por carretera del circuito encontrado. Cuando el usuario usa esa opción, la distancia retornada en kilómetros reemplaza el peso de cada arista consultada. Así el algoritmo vuelve a trabajar con pesos viales y no con estimaciones en línea recta.
 
+## Implementación en Python
+
+`app.py` contiene el servidor Flask y la API local. `hamiltonian.py` contiene la construcción del grafo, la conectividad, los criterios de Dirac y Ore y la búsqueda por retroceso. El navegador solo usa JavaScript para representar el mapa y solicitar los caminos a Google Maps.
+
 ## Uso
 
-Ejecutar `npm run dev` dentro de `proyecto_Kielsa`. Se pueden cambiar nodos, conexiones y pesos desde la interfaz; al hacerlo el resultado se recalcula sobre el grafo actual, sin circuitos fijos.
+Ejecutar `python app.py` dentro de `proyecto_Kielsa` y abrir `http://127.0.0.1:5000`. Se pueden cambiar nodos, conexiones y pesos desde la interfaz; al hacerlo, Python vuelve a calcular el resultado sobre el grafo actual, sin circuitos fijos.

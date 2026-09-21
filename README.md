@@ -1,14 +1,15 @@
-# Proyecto Kielsa — Entrega 2
+# Proyecto Kielsa — Entrega 2 en Python
 
-Aplicación editable para construir y verificar circuitos hamiltonianos en bloques de farmacias Kielsa de San Pedro Sula.
+El servidor, las validaciones de Dirac y Ore, y la búsqueda de circuitos hamiltonianos se implementan en Python con Flask. JavaScript solo dibuja el mapa y los caminos de Google Maps dentro del navegador.
 
 ```powershell
-npm run dev
-npm test
+& "C:\Users\aleja\AppData\Local\Python\bin\python.exe" app.py
 ```
 
-Los datos iniciales provienen del Avance 1. Los cambios que hagas en la interfaz se guardan en el navegador y pueden restaurarse con **Restaurar Avance 1**.
+Abre `http://127.0.0.1:5000`.
 
-## Google Maps
+Para ejecutar la prueba del algoritmo:
 
-El mapa usa `VITE_GOOGLE_MAPS_BROWSER_KEY` del archivo `.env`. En el mismo proyecto de Google Cloud deben estar habilitadas **Maps JavaScript API** y **Routes API**. La clave debe restringirse por HTTP referrer; nunca se copia al repositorio.
+```powershell
+& "C:\Users\aleja\AppData\Local\Python\bin\python.exe" -m unittest discover -s tests
+```
