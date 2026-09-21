@@ -1,414 +1,142 @@
 import './style.css';
-import { buildGraph, shortestPath } from './graph.js';
+import { avance1Blocks } from './data.js';
+import { buildAdjacency, evaluateHamiltonianCriteria, findHamiltonianCycle } from './hamiltonian.js';
 
-const MAP_CENTER = { lat: 15.5042, lng: -88.0250 };
-const browserKey = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY?.trim();
+const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY?.trim();
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const saved = localStorage.getItem('kielsa-hamiltonian-blocks');
+let blocks = saved ? JSON.parse(saved) : clone(avance1Blocks);
+let selectedBlockId = blocks[0].id;
 
-const elements = {
-  branchCount: document.querySelector('#branch-count'),
-  edgeCount: document.querySelector('#edge-count'),
-  listCount: document.querySelector('#list-count'),
-  dataNotice: document.querySelector('#data-notice'),
-  branchList: document.querySelector('#branch-list'),
-  origin: document.querySelector('#origin-select'),
-  destination: document.querySelector('#destination-select'),
-  swap: document.querySelector('#swap-button'),
-  routeResult: document.querySelector('#route-result'),
-  map: document.querySelector('#map'),
-  mapOverlay: document.querySelector('#map-overlay'),
-  mapOverlayTitle: document.querySelector('#map-overlay-title'),
-  mapOverlayMessage: document.querySelector('#map-overlay-message'),
-};
+const el = Object.fromEntries(['block-select', 'start-select', 'analyze-button', 'reset-button', 'node-form', 'node-name', 'node-list', 'edge-form', 'edge-from', 'edge-to', 'edge-weight', 'edge-list', 'analysis-result', 'road-route-button', 'map-status', 'map'].map((id) => [id, document.querySelector(`#${id}`)]));
+const maps = { instance: null, markers: [], polylines: [], routeClass: null, ready: null };
+let lastCycle = null;
+const block = () => blocks.find((item) => item.id === selectedBlockId);
+const persist = () => localStorage.setItem('kielsa-hamiltonian-blocks', JSON.stringify(blocks));
+const escape = (text) => String(text).replace(/[&<>'"]/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
 
-const state = {
-  branches: [],
-  branchById: new Map(),
-  graph: null,
-  map: null,
-  infoWindow: null,
-  markers: new Map(),
-  edges: [],
-  routeLine: null,
-  routeIds: new Set(),
-  focusedId: null,
-};
-
-function setNotice(message, isError = false) {
-  elements.dataNotice.textContent = message || '';
-  elements.dataNotice.hidden = !message;
-  elements.dataNotice.classList.toggle('is-error', isError);
+function options(items, selected) { return items.map((item) => `<option value="${item.id}" ${item.id === selected ? 'selected' : ''}>${escape(item.name)}</option>`).join(''); }
+function render(preserveRoads = false) {
+  const current = block();
+  el['block-select'].innerHTML = options(blocks, selectedBlockId);
+  const start = el['start-select'].value && current.nodes.some((item) => item.id === el['start-select'].value) ? el['start-select'].value : current.nodes[0]?.id;
+  el['start-select'].innerHTML = options(current.nodes, start);
+  el['edge-from'].innerHTML = options(current.nodes, current.nodes[0]?.id);
+  el['edge-to'].innerHTML = options(current.nodes, current.nodes[1]?.id || current.nodes[0]?.id);
+  el['node-list'].innerHTML = current.nodes.map((item) => `<li><span>${escape(item.name)}</span><button data-remove-node="${item.id}" aria-label="Eliminar ${escape(item.name)}">Eliminar</button></li>`).join('') || '<li>No hay nodos.</li>';
+  const names = new Map(current.nodes.map((item) => [item.id, item.name]));
+  el['edge-list'].innerHTML = current.edges.map((item, index) => `<div class="edge-row"><span>${escape(names.get(item.from) || item.from)}</span><strong>${Number(item.weight).toFixed(2)} km</strong><span>${escape(names.get(item.to) || item.to)}</span><button data-remove-edge="${index}">Eliminar</button></div>`).join('') || '<p class="hint">Agrega las conexiones del bloque.</p>';
+  renderMapMarkers(preserveRoads);
 }
 
-function setMapOverlay(title, message) {
-  elements.mapOverlayTitle.textContent = title;
-  elements.mapOverlayMessage.textContent = message;
-  elements.mapOverlay.hidden = false;
+function analyze() {
+  const current = block();
+  const adjacency = buildAdjacency(current);
+  const criteria = evaluateHamiltonianCriteria(adjacency);
+  const result = findHamiltonianCycle(current, el['start-select'].value);
+  const names = new Map(current.nodes.map((item) => [item.id, item.name]));
+  const degrees = Object.entries(criteria.degrees).map(([id, degree]) => `${escape(names.get(id) || id)}: ${degree}`).join(' · ');
+  const cycle = result ? result.path.map((id) => escape(names.get(id) || id)).join(' → ') : 'No se encontró un circuito con las conexiones actuales.';
+  lastCycle = result;
+  el['road-route-button'].disabled = !result;
+  el['analysis-result'].innerHTML = `<p><strong>Criterio de subdivisión:</strong> ${escape(current.criterion)}</p><div class="checks"><span class="${criteria.connected ? 'pass':'fail'}">${criteria.connected ? '✓':'✕'} Grafo conexo</span><span class="${criteria.minimumDegree ? 'pass':'fail'}">${criteria.minimumDegree ? '✓':'✕'} Grado mínimo ≥ 2</span><span class="${criteria.dirac ? 'pass':'fail'}">${criteria.dirac ? '✓':'✕'} Dirac</span><span class="${criteria.ore ? 'pass':'fail'}">${criteria.ore ? '✓':'✕'} Ore</span></div><p><strong>Grados:</strong> ${degrees || 'sin nodos'}</p><h3>${result ? `Circuito encontrado · ${result.totalWeight.toFixed(2)} km` : 'Sin circuito hamiltoniano'}</h3><p class="cycle">${cycle}</p><p class="hint">Dirac y Ore son criterios suficientes. Si no se cumplen, la búsqueda aún puede encontrar un circuito.</p>`;
 }
 
-function showResult(message) {
-  const label = document.createElement('span');
-  label.className = 'result-label';
-  label.textContent = 'Ruta más corta';
-  const paragraph = document.createElement('p');
-  paragraph.textContent = message;
-  elements.routeResult.replaceChildren(label, paragraph);
-}
-
-function mapsUrl(branch) {
-  if (branch.googleMapsUri) {
-    try {
-      const url = new URL(branch.googleMapsUri);
-      if (url.protocol === 'https:' && (url.hostname === 'google.com' || url.hostname.endsWith('.google.com') || url.hostname === 'goo.gl')) {
-        return url.href;
-      }
-    } catch { /* Use the safe search link below. */ }
-  }
-  const query = encodeURIComponent(`${branch.name} ${branch.address || 'San Pedro Sula, Honduras'}`);
-  return `https://www.google.com/maps/search/?api=1&query=${query}`;
-}
-
-function displayName(branch) {
-  return branch?.name || 'Sucursal Kielsa';
-}
-
-function renderBranchList() {
-  const items = state.branches.map((branch, index) => {
-    const item = document.createElement('li');
-    item.className = 'branch-item';
-    item.dataset.branchId = String(branch.id);
-
-    const number = document.createElement('span');
-    number.className = 'branch-number';
-    number.textContent = String(index + 1);
-
-    const main = document.createElement('div');
-    main.className = 'branch-main';
-    const button = document.createElement('button');
-    button.className = 'branch-button';
-    button.type = 'button';
-    button.textContent = displayName(branch);
-    button.addEventListener('click', () => focusBranch(String(branch.id)));
-
-    const address = document.createElement('span');
-    address.className = 'branch-address';
-    address.textContent = branch.address || 'San Pedro Sula, Cortés';
-
-    const link = document.createElement('a');
-    link.className = 'branch-link';
-    link.href = mapsUrl(branch);
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'Ver en Google Maps ↗';
-
-    main.append(button, address, link);
-    item.append(number, main);
-    return item;
-  });
-  elements.branchList.replaceChildren(...items);
-}
-
-function renderSelectors() {
-  for (const select of [elements.origin, elements.destination]) {
-    const options = state.branches.map((branch) => {
-      const option = document.createElement('option');
-      option.value = String(branch.id);
-      option.textContent = displayName(branch);
-      return option;
-    });
-    select.replaceChildren(...options);
-    select.disabled = state.branches.length === 0;
-  }
-  elements.swap.disabled = state.branches.length < 2;
-  if (state.branches.length > 1) {
-    elements.destination.selectedIndex = 1;
-  }
-}
-
-function renderRoute() {
-  state.routeLine?.setMap(null);
-  state.routeLine = null;
-  state.routeIds.clear();
-
-  if (!state.graph || state.branches.length === 0) {
-    showResult('No hay sucursales disponibles para calcular una ruta.');
-    updateMarkerStyles();
-    return;
-  }
-
-  const origin = state.branchById.get(elements.origin.value);
-  const destination = state.branchById.get(elements.destination.value);
-  if (!origin || !destination) {
-    showResult('Selecciona un origen y un destino.');
-    updateMarkerStyles();
-    return;
-  }
-
-  const result = String(origin.id) === String(destination.id)
-    ? { path: [origin.id], distanceKm: 0 }
-    : shortestPath(state.graph, origin.id, destination.id);
-
-  if (!result || !Array.isArray(result.path) || result.path.length === 0) {
-    showResult('No hay una conexión entre las sucursales seleccionadas.');
-    updateMarkerStyles();
-    return;
-  }
-
-  const pathBranches = result.path.map((id) => state.branchById.get(String(id))).filter(Boolean);
-  if (pathBranches.length !== result.path.length) {
-    showResult('No se pudo mostrar la ruta con los datos disponibles.');
-    updateMarkerStyles();
-    return;
-  }
-
-  state.routeIds = new Set(result.path.map(String));
-  const label = document.createElement('span');
-  label.className = 'result-label';
-  label.textContent = 'Ruta más corta';
-  const distance = document.createElement('strong');
-  distance.className = 'route-distance';
-  distance.textContent = Number(result.distanceKm).toLocaleString('es-HN', { maximumFractionDigits: 2 });
-  const unit = document.createElement('small');
-  unit.textContent = ' km';
-  distance.append(unit);
-  const explanation = document.createElement('p');
-  explanation.textContent = pathBranches.length === 1
-    ? 'El origen y el destino son la misma sucursal.'
-    : `${pathBranches.length} sucursales en el recorrido del grafo.`;
-  const steps = document.createElement('ol');
-  steps.className = 'route-path';
-  for (const branch of pathBranches) {
-    const step = document.createElement('li');
-    step.textContent = displayName(branch);
-    steps.append(step);
-  }
-  elements.routeResult.replaceChildren(label, distance, explanation, steps);
-
-  if (state.map && pathBranches.length > 1) {
-    state.routeLine = new google.maps.Polyline({
-      map: state.map,
-      path: pathBranches.map(({ lat, lng }) => ({ lat, lng })),
-      geodesic: true,
-      strokeColor: '#e7474e',
-      strokeOpacity: 1,
-      strokeWeight: 5,
-      zIndex: 5,
-    });
-  }
-  updateMarkerStyles();
-}
-
-function markerIcon(isOnRoute) {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: isOnRoute ? 14 : 12,
-    fillColor: isOnRoute ? '#e7474e' : '#17384a',
-    fillOpacity: 1,
-    strokeColor: '#ffffff',
-    strokeWeight: 3,
-  };
-}
-
-function updateMarkerStyles() {
-  for (const [id, marker] of state.markers) {
-    const isOnRoute = state.routeIds.has(id);
-    marker.setIcon(markerIcon(isOnRoute));
-    marker.setZIndex(isOnRoute ? 10 : 2);
-  }
-}
-
-function focusBranch(id) {
-  const branch = state.branchById.get(id);
-  if (!branch) return;
-  state.focusedId = id;
-  for (const item of elements.branchList.children) {
-    item.classList.toggle('is-active', item.dataset.branchId === id);
-  }
-  if (!state.map) return;
-  state.map.panTo({ lat: branch.lat, lng: branch.lng });
-  state.map.setZoom(Math.max(state.map.getZoom() || 12, 14));
-  const marker = state.markers.get(id);
-  if (!marker) return;
-
-  const content = document.createElement('div');
-  content.style.maxWidth = '230px';
-  const title = document.createElement('strong');
-  title.textContent = displayName(branch);
-  const address = document.createElement('p');
-  address.style.margin = '6px 0';
-  address.textContent = branch.address || 'San Pedro Sula, Cortés';
-  const link = document.createElement('a');
-  link.href = mapsUrl(branch);
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.textContent = 'Abrir en Google Maps';
-  content.append(title, address, link);
-  state.infoWindow.setContent(content);
-  state.infoWindow.open({ map: state.map, anchor: marker });
-}
-
-function drawGraph() {
-  if (!state.map || !state.graph) return;
-  for (const edge of state.edges) edge.setMap(null);
-  for (const marker of state.markers.values()) marker.setMap(null);
-  state.edges = [];
-  state.markers.clear();
-
-  for (const edge of state.graph.edges || []) {
-    const from = state.branchById.get(String(edge.from));
-    const to = state.branchById.get(String(edge.to));
-    if (!from || !to) continue;
-    state.edges.push(new google.maps.Polyline({
-      map: state.map,
-      path: [{ lat: from.lat, lng: from.lng }, { lat: to.lat, lng: to.lng }],
-      geodesic: true,
-      strokeColor: '#7293a3',
-      strokeOpacity: 0.55,
-      strokeWeight: 2,
-      zIndex: 1,
-    }));
-  }
-
-  const bounds = new google.maps.LatLngBounds();
-  state.branches.forEach((branch, index) => {
-    const id = String(branch.id);
-    const position = { lat: branch.lat, lng: branch.lng };
-    const marker = new google.maps.Marker({
-      map: state.map,
-      position,
-      title: displayName(branch),
-      icon: markerIcon(state.routeIds.has(id)),
-      label: {
-        text: String(index + 1),
-        color: '#ffffff',
-        fontSize: '10px',
-        fontWeight: '700',
-      },
-      zIndex: state.routeIds.has(id) ? 10 : 2,
-    });
-    marker.addListener('click', () => focusBranch(id));
-    state.markers.set(id, marker);
-    bounds.extend(position);
-  });
-
-  if (state.branches.length > 1) {
-    state.map.fitBounds(bounds, 65);
-  } else if (state.branches.length === 1) {
-    state.map.setCenter({ lat: state.branches[0].lat, lng: state.branches[0].lng });
-    state.map.setZoom(14);
-  }
-  renderRoute();
-}
-
-function loadGoogleMaps(key) {
-  return new Promise((resolve, reject) => {
-    const callbackName = '__kielsaMapLoaded';
-    window[callbackName] = () => {
-      delete window[callbackName];
-      resolve(window.google.maps);
-    };
+// Carga Google Maps solo cuando existe una clave de navegador en .env.
+function loadGoogleMaps() {
+  if (maps.ready) return maps.ready;
+  if (!MAPS_KEY) return Promise.reject(new Error('Falta VITE_GOOGLE_MAPS_BROWSER_KEY en el archivo .env.'));
+  maps.ready = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    const parameters = new URLSearchParams({
-      key,
-      loading: 'async',
-      callback: callbackName,
-      language: 'es',
-      region: 'HN',
-      v: 'weekly',
-    });
-    script.src = `https://maps.googleapis.com/maps/api/js?${parameters}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(MAPS_KEY)}&v=weekly`;
     script.async = true;
-    script.onerror = () => reject(new Error('No se pudo descargar Google Maps.'));
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('No se pudo cargar Google Maps.'));
     document.head.append(script);
   });
+  return maps.ready;
 }
 
-async function initializeMap() {
-  if (!browserKey) {
-    setMapOverlay('Falta la clave de Google Maps', 'Configura VITE_GOOGLE_MAPS_BROWSER_KEY en el archivo .env y reinicia la aplicación.');
-    return;
-  }
-  let authFailed = false;
-  window.gm_authFailure = () => {
-    authFailed = true;
-    setMapOverlay('No se pudo autorizar Google Maps', 'Revisa que la clave del navegador permita Maps JavaScript API y este dominio.');
-  };
+async function initialiseMap() {
   try {
-    await loadGoogleMaps(browserKey);
-    state.map = new google.maps.Map(elements.map, {
-      center: MAP_CENTER,
-      zoom: 12,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: true,
-      clickableIcons: false,
-      styles: [
-        { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-      ],
-    });
-    state.infoWindow = new google.maps.InfoWindow();
-    if (!authFailed) elements.mapOverlay.hidden = true;
-    drawGraph();
-  } catch {
-    setMapOverlay('No se pudo cargar el mapa', 'Revisa la conexión, la clave de Google Maps y los dominios autorizados.');
+    await loadGoogleMaps();
+    const [{ Map }, { Route }] = await Promise.all([google.maps.importLibrary('maps'), google.maps.importLibrary('routes')]);
+    maps.routeClass = Route;
+    maps.instance = new Map(el.map, { center: { lat: 15.5042, lng: -88.025 }, zoom: 12, mapTypeControl: true, streetViewControl: false });
+    el['map-status'].textContent = 'Google Maps listo. Selecciona un bloque y luego solicita su recorrido.';
+    renderMapMarkers();
+  } catch (error) {
+    el['map-status'].textContent = `${error.message} Habilita Maps JavaScript API y Routes API en el mismo proyecto de Google Cloud.`;
   }
 }
 
-async function loadBranches() {
+function validCoordinates(item) { return Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)); }
+function clearMapMarkers() {
+  maps.markers.forEach((marker) => marker.setMap(null));
+  maps.markers = [];
+}
+function clearRoadPolylines() {
+  maps.polylines.forEach((polyline) => polyline.setMap(null));
+  maps.polylines = [];
+}
+function renderMapMarkers(preserveRoads = false) {
+  if (!maps.instance) return;
+  clearMapMarkers();
+  if (!preserveRoads) clearRoadPolylines();
+  const points = block().nodes.filter(validCoordinates);
+  const bounds = new google.maps.LatLngBounds();
+  for (const item of points) {
+    const position = { lat: Number(item.lat), lng: Number(item.lng) };
+    maps.markers.push(new google.maps.Marker({ map: maps.instance, position, title: item.name, label: item.id.replace(/^K/, '').slice(0, 2) }));
+    bounds.extend(position);
+  }
+  if (points.length) maps.instance.fitBounds(bounds, 55);
+}
+
+function setRoadWeight(from, to, km) {
+  const current = block();
+  const edge = current.edges.find((item) => (item.from === from && item.to === to) || (item.from === to && item.to === from));
+  if (edge) edge.weight = Math.round(km * 100) / 100;
+}
+
+// Cada tramo del ciclo se consulta a Google Routes. Así se dibuja el camino real
+// y el peso del grafo se actualiza con distancia vial, no con línea recta.
+async function drawRoadCircuit() {
+  if (!lastCycle || !maps.routeClass || !maps.instance) { el['map-status'].textContent = 'El mapa aún no está listo o no hay circuito que dibujar.'; return; }
+  const current = block();
+  const byId = new Map(current.nodes.map((item) => [item.id, item]));
+  const legs = lastCycle.path.slice(0, -1).map((from, index) => [from, lastCycle.path[index + 1]]);
+  if (legs.some(([from, to]) => !validCoordinates(byId.get(from)) || !validCoordinates(byId.get(to)))) { el['map-status'].textContent = 'Todos los nodos del circuito necesitan latitud y longitud para consultar el camino real.'; return; }
+  clearRoadPolylines();
+  el['road-route-button'].disabled = true;
+  el['map-status'].textContent = `Consultando ${legs.length} tramos por carretera en Google Maps…`;
   try {
-    const response = await fetch('/api/branches');
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (!Array.isArray(data.branches)) throw new Error('Respuesta sin lista de sucursales');
-
-    state.branches = data.branches.filter((branch) =>
-      branch.id != null && Number.isFinite(Number(branch.lat)) && Number.isFinite(Number(branch.lng))
-    ).map((branch) => ({ ...branch, lat: Number(branch.lat), lng: Number(branch.lng) }));
-    state.branchById = new Map(state.branches.map((branch) => [String(branch.id), branch]));
-    state.graph = buildGraph(state.branches);
-
-    elements.branchCount.textContent = String(state.branches.length);
-    elements.edgeCount.textContent = String(state.graph.edges?.length || 0);
-    elements.listCount.textContent = String(state.branches.length);
-    if (state.branches.length === 0) {
-      elements.branchList.replaceChildren(Object.assign(document.createElement('li'), {
-        className: 'list-message',
-        textContent: 'No se encontraron sucursales de Kielsa en San Pedro Sula.',
-      }));
-      renderSelectors();
-      showResult('No hay sucursales disponibles para calcular una ruta.');
-    } else {
-      renderBranchList();
-      renderSelectors();
-      renderRoute();
+    for (const [fromId, toId] of legs) {
+      const from = byId.get(fromId); const to = byId.get(toId);
+      const { routes } = await maps.routeClass.computeRoutes({
+        origin: { lat: Number(from.lat), lng: Number(from.lng) }, destination: { lat: Number(to.lat), lng: Number(to.lng) },
+        travelMode: 'DRIVING', fields: ['path', 'distanceMeters', 'durationMillis'],
+      });
+      const route = routes?.[0];
+      if (!route?.path?.length) throw new Error(`Google Maps no devolvió una ruta para ${from.name} → ${to.name}.`);
+      maps.polylines.push(new google.maps.Polyline({ map: maps.instance, path: route.path, strokeColor: '#117866', strokeOpacity: 0.9, strokeWeight: 5 }));
+      setRoadWeight(fromId, toId, Number(route.distanceMeters) / 1000);
     }
-    if (data.warning) {
-      setNotice(data.warning);
-    } else if (Number(data.excludedCount) > 0) {
-      setNotice(`Se excluyeron ${data.excludedCount} ubicaciones que no pertenecen a San Pedro Sula.`);
-    }
-    drawGraph();
-  } catch {
-    elements.branchCount.textContent = '0';
-    elements.edgeCount.textContent = '0';
-    elements.branchList.replaceChildren(Object.assign(document.createElement('li'), {
-      className: 'list-message',
-      textContent: 'No fue posible cargar las sucursales.',
-    }));
-    renderSelectors();
-    showResult('No fue posible calcular rutas sin los datos de sucursales.');
-    setNotice('No se pudieron obtener las sucursales. Revisa la conexión y la configuración de Google Places.', true);
-  }
+    persist(); render(true); analyze();
+    el['map-status'].textContent = 'Caminos reales dibujados. Los pesos fueron actualizados con los kilómetros devueltos por Google Maps.';
+  } catch (error) { el['map-status'].textContent = `No se pudo calcular la ruta: ${error.message}`; }
+  finally { el['road-route-button'].disabled = !lastCycle; }
 }
 
-elements.origin.addEventListener('change', renderRoute);
-elements.destination.addEventListener('change', renderRoute);
-elements.swap.addEventListener('click', () => {
-  const previousOrigin = elements.origin.value;
-  elements.origin.value = elements.destination.value;
-  elements.destination.value = previousOrigin;
-  renderRoute();
-});
+el['block-select'].addEventListener('change', (event) => { selectedBlockId = event.target.value; render(); analyze(); });
+el['analyze-button'].addEventListener('click', analyze);
+el['road-route-button'].addEventListener('click', drawRoadCircuit);
+el['reset-button'].addEventListener('click', () => { blocks = clone(avance1Blocks); selectedBlockId = blocks[0].id; persist(); render(); analyze(); });
+el['node-form'].addEventListener('submit', (event) => { event.preventDefault(); const name = el['node-name'].value.trim(); if (!name) return; block().nodes.push({ id: `N${Date.now()}`, name }); el['node-name'].value = ''; persist(); render(); analyze(); });
+el['edge-form'].addEventListener('submit', (event) => { event.preventDefault(); const from = el['edge-from'].value; const to = el['edge-to'].value; const weight = Number(el['edge-weight'].value); if (from === to || !Number.isFinite(weight) || weight <= 0) return; const exists = block().edges.some((item) => (item.from === from && item.to === to) || (item.from === to && item.to === from)); if (!exists) block().edges.push({ from, to, weight }); el['edge-weight'].value = ''; persist(); render(); analyze(); });
+el['node-list'].addEventListener('click', (event) => { const id = event.target.dataset.removeNode; if (!id) return; const current = block(); current.nodes = current.nodes.filter((item) => item.id !== id); current.edges = current.edges.filter((item) => item.from !== id && item.to !== id); persist(); render(); analyze(); });
+el['edge-list'].addEventListener('click', (event) => { const index = event.target.dataset.removeEdge; if (index === undefined) return; block().edges.splice(Number(index), 1); persist(); render(); analyze(); });
 
-void initializeMap();
-void loadBranches();
+render();
+analyze();
+initialiseMap();

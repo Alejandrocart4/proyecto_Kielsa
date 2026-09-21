@@ -3,127 +3,70 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#102434" />
-    <meta
-      name="description"
-      content="Visualización de sucursales Kielsa en San Pedro Sula como nodos y conexiones de un grafo."
-    />
-    <title>Red de Kielsa · San Pedro Sula</title>
+    <title>Rutas Hamiltonianas | Kielsa SPS</title>
   </head>
   <body>
-    <div class="app-shell">
-      <header class="site-header">
-        <div class="brand-mark" aria-hidden="true">K<span>•</span></div>
-        <div class="brand-copy">
-          <span class="brand-name">Proyecto Kielsa</span>
-          <span class="brand-subtitle">Grafo de sucursales · San Pedro Sula</span>
-        </div>
-        <span class="header-chip">Matemática discreta</span>
+    <main class="layout">
+      <header class="hero">
+        <p class="eyebrow">Matemática Discreta · Entrega 2</p>
+        <h1>Constructor de circuitos hamiltonianos</h1>
+        <p>Modelo editable basado en las distancias registradas en el Avance 1.</p>
       </header>
 
-      <main>
-        <section class="intro" aria-labelledby="page-title">
-          <div>
-            <p class="eyebrow">Explorador de ubicaciones</p>
-            <h1 id="page-title">Kielsa en San Pedro Sula</h1>
-            <p class="intro-description">
-              Cada sucursal es un nodo. Las conexiones forman una red donde puedes
-              explorar el camino más corto entre dos ubicaciones.
-            </p>
-          </div>
-          <div class="summary" aria-live="polite">
-            <div class="summary-item">
-              <strong id="branch-count">—</strong>
-              <span>Sucursales</span>
-            </div>
-            <div class="summary-divider" aria-hidden="true"></div>
-            <div class="summary-item">
-              <strong id="edge-count">—</strong>
-              <span>Conexiones</span>
-            </div>
-          </div>
-        </section>
+      <section class="requirement" aria-label="Requisito de la entrega">
+        <strong>Requisito del PDF:</strong> seleccionar bloques, justificar el criterio, verificar condiciones hamiltonianas y programar la búsqueda de circuitos.
+      </section>
 
-        <div id="data-notice" class="notice" role="status" hidden></div>
+      <section class="panel controls">
+        <div>
+          <label for="block-select">Bloque de trabajo</label>
+          <select id="block-select"></select>
+        </div>
+        <div>
+          <label for="start-select">Nodo inicial</label>
+          <select id="start-select"></select>
+        </div>
+        <button id="analyze-button" class="primary">Verificar y buscar circuito</button>
+        <button id="reset-button" class="secondary">Restaurar Avance 1</button>
+      </section>
 
-        <section class="workspace" aria-label="Explorador del grafo">
-          <aside class="sidebar">
-            <section class="panel route-panel" aria-labelledby="route-title">
-              <div class="panel-heading">
-                <span class="section-index">01</span>
-                <div>
-                  <p class="eyebrow">Recorrido</p>
-                  <h2 id="route-title">Encuentra una ruta</h2>
-                </div>
-              </div>
-              <p class="panel-description">
-                Selecciona dos sucursales para encontrar el camino más corto dentro del grafo.
-              </p>
+      <section class="grid">
+        <article class="panel">
+          <h2>Nodos del bloque</h2>
+          <p class="hint">Puedes cambiar los nombres. Cada nodo representa una farmacia.</p>
+          <form id="node-form" class="inline-form">
+            <input id="node-name" required placeholder="Nombre de la farmacia" />
+            <button>Agregar nodo</button>
+          </form>
+          <ul id="node-list" class="node-list"></ul>
+        </article>
 
-              <div class="field-group">
-                <label for="origin-select"><span class="field-dot origin-dot"></span> Origen</label>
-                <select id="origin-select" disabled>
-                  <option value="">Cargando sucursales…</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label for="destination-select"><span class="field-dot destination-dot"></span> Destino</label>
-                <select id="destination-select" disabled>
-                  <option value="">Cargando sucursales…</option>
-                </select>
-              </div>
-              <button id="swap-button" class="swap-button" type="button" disabled>
-                <span aria-hidden="true">⇅</span> Intercambiar origen y destino
-              </button>
+        <article class="panel">
+          <h2>Conexiones y pesos</h2>
+          <p class="hint">El peso es la distancia vial en kilómetros. Puedes modificarlo cuando tengas una nueva consulta de Google Maps.</p>
+          <form id="edge-form" class="edge-form">
+            <select id="edge-from" required></select>
+            <select id="edge-to" required></select>
+            <input id="edge-weight" type="number" min="0.01" step="0.01" required placeholder="km" />
+            <button>Agregar conexión</button>
+          </form>
+          <div id="edge-list"></div>
+        </article>
+      </section>
 
-              <div id="route-result" class="route-result" aria-live="polite">
-                <span class="result-label">Ruta más corta</span>
-                <p>Las sucursales aparecerán aquí cuando se carguen.</p>
-              </div>
-            </section>
+      <section class="panel result-panel">
+        <h2>Verificación y resultado</h2>
+        <div id="analysis-result" aria-live="polite"></div>
+        <button id="road-route-button" class="primary" disabled>Ver caminos reales en Google Maps</button>
+        <p id="map-status" class="hint" aria-live="polite"></p>
+      </section>
 
-            <section class="panel branch-panel" aria-labelledby="branches-title">
-              <div class="branch-heading">
-                <div class="panel-heading">
-                  <span class="section-index">02</span>
-                  <div>
-                    <p class="eyebrow">Directorio</p>
-                    <h2 id="branches-title">Sucursales</h2>
-                  </div>
-                </div>
-                <span id="list-count" class="count-badge">0</span>
-              </div>
-              <p class="panel-description">Solo ubicaciones verificadas en San Pedro Sula.</p>
-              <ul id="branch-list" class="branch-list" aria-live="polite">
-                <li class="list-message">Cargando sucursales…</li>
-              </ul>
-            </section>
-          </aside>
-
-          <section class="map-panel" aria-label="Mapa de sucursales y conexiones">
-            <div id="map" class="map-canvas"></div>
-            <div id="map-overlay" class="map-overlay" role="status">
-              <div class="map-overlay-card">
-                <span class="map-overlay-icon" aria-hidden="true">⌖</span>
-                <strong id="map-overlay-title">Cargando mapa…</strong>
-                <p id="map-overlay-message">Preparando Google Maps.</p>
-              </div>
-            </div>
-            <div class="map-legend" aria-label="Leyenda del mapa">
-              <span><i class="legend-node" aria-hidden="true"></i> Sucursal</span>
-              <span><i class="legend-edge" aria-hidden="true"></i> Conexión</span>
-              <span><i class="legend-route" aria-hidden="true"></i> Ruta más corta</span>
-            </div>
-            <p class="map-note">Las líneas muestran conexiones del grafo; no son rutas por calles.</p>
-          </section>
-        </section>
-      </main>
-
-      <footer class="site-footer">
-        <span>Proyecto Kielsa · San Pedro Sula, Honduras</span>
-        <span>Datos de ubicaciones: Google Places</span>
-      </footer>
-    </div>
+      <section class="panel map-panel">
+        <h2>Mapa de San Pedro Sula</h2>
+        <p class="hint">Los marcadores son las farmacias del bloque. Al solicitar la ruta, Google Maps dibuja los caminos por carretera y actualiza los pesos de esas aristas.</p>
+        <div id="map" role="img" aria-label="Mapa de Google Maps con las farmacias del bloque"></div>
+      </section>
+    </main>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

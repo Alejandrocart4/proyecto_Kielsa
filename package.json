@@ -1,21 +1,14 @@
 {
-  "name": "proyecto-kielsa",
-  "version": "1.0.0",
+  "name": "proyecto-kielsa-hamiltoniano",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"npm:dev:api\"",
-    "dev:api": "node --watch server/index.js",
+    "dev": "vite",
     "build": "vite build",
-    "start": "node server/index.js",
     "test": "node --test"
   },
-  "dependencies": {
-    "dotenv": "^16.6.1",
-    "express": "^5.1.0"
-  },
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "vite": "^7.1.0"
   }
 }
