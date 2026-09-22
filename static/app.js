@@ -157,7 +157,8 @@ async function analyze() {
   if (!response.ok) { $("result").textContent = data.error; return; }
   lastCycle = data.cycle; const criteria = data.criteria, labels = workNames();
   const cycle = data.cycle ? data.cycle.path.map((id) => escapeHtml(labels.get(id))).join(" → ") : "No hay circuito con las aristas actuales.";
-  $("result").innerHTML = `<p><b>Pesos:</b> ${escapeHtml(currentWork().weight_source || "Configurados manualmente.")}</p><p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
+  const returnPoint = data.cycle ? escapeHtml(labels.get(data.cycle.path[0])) : "—";
+  $("result").innerHTML = `<p><b>Pesos:</b> ${escapeHtml(currentWork().weight_source || "Configurados manualmente.")}</p><p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Inicio y retorno:</b> ${returnPoint}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
   if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; }
 }
 

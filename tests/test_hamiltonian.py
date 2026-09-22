@@ -26,9 +26,12 @@ class HamiltonianTests(unittest.TestCase):
         self.assertEqual([len(block["nodes"]) for block in blocks], [19, 19, 14])
         self.assertEqual(sum(len(block["nodes"]) for block in blocks), 52)
         for block in blocks:
-            result = analyze_block(block, block["nodes"][0]["id"])
+            selected_start = block["nodes"][-1]["id"]
+            result = analyze_block(block, selected_start)
             self.assertIsNotNone(result["cycle"])
             self.assertEqual(len(result["cycle"]["path"]), len(block["nodes"]) + 1)
+            self.assertEqual(result["cycle"]["path"][0], selected_start)
+            self.assertEqual(result["cycle"]["path"][-1], selected_start)
 
 
 if __name__ == "__main__":
