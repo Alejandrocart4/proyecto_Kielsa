@@ -1,7 +1,91 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kielsa Hamiltoniano</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
-<body><main class="layout"><header><p>Matemática Discreta · Entrega 2</p><h1>Constructor de circuitos hamiltonianos</h1><span>Algoritmo y servidor en Python · mapa y rutas en Google Maps</span></header>
-<section class="panel controls"><label>Bloque <select id="block"></select></label><label>Nodo inicial <select id="start"></select></label><button id="analyze">Buscar circuito</button><button id="reset">Restaurar Avance 1</button></section>
-<section class="two"><article class="panel"><h2>Nodos</h2><form id="node-form"><input id="node-name" placeholder="Nombre de farmacia" required><input id="node-lat" type="number" step="any" placeholder="Latitud"><input id="node-lng" type="number" step="any" placeholder="Longitud"><button>Agregar</button></form><ul id="nodes"></ul></article><article class="panel"><h2>Aristas y pesos</h2><form id="edge-form"><select id="from"></select><select id="to"></select><input id="weight" type="number" step="0.01" min="0.01" placeholder="km" required><button>Agregar</button></form><div id="edges"></div></article></section>
-<section class="panel"><h2>Resultado Python</h2><div id="result"></div><button id="roads">Dibujar caminos reales</button><p id="status"></p></section><section class="panel"><h2>Mapa de San Pedro Sula</h2><div id="map"></div></section></main>
-<script>window.MAPS_KEY={{ maps_key|tojson }};</script><script src="{{ url_for('static', filename='app.js') }}"></script></body></html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Optimizador de rutas Kielsa SPS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-cross">+</span><div><strong>Kielsa</strong><small>Salud y bienestar para todos</small></div></div>
+    <div class="title"><h1>Optimizador de Rutas Kielsa SPS</h1><p>Circuitos Hamiltonianos por bloque y evaluación de sede técnica</p></div>
+    <div class="city-card"><span>●</span><div><b>San Pedro Sula, Cortés</b><small><span id="branch-total">52</span> sucursales activas</small></div></div>
+    <div class="date-card"><span>▣</span><div><b id="today">—</b><small id="clock">—</small></div></div>
+  </header>
+
+  <nav class="toolbar">
+    <button class="primary" id="load-branches">▣ Cargar sucursales oficiales</button>
+    <button class="green" id="show-all">⌘ Mostrar todos los bloques</button>
+    <button class="purple" id="open-constructor">⌘ Calcular circuito Hamiltoniano</button>
+    <button class="plain" id="candidate-button">▥ Comparar sedes</button>
+    <label class="block-picker">Bloque seleccionado:
+      <select id="zone-select"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
+    </label>
+    <button class="settings" id="toggle-settings">⚙ Configuración</button>
+  </nav>
+
+  <main class="dashboard">
+    <aside class="left-panel card">
+      <h2>Sucursales oficiales SPS <span id="list-total">(52)</span></h2>
+      <label class="search"><span>⌕</span><input id="search" placeholder="Buscar sucursal, zona o código"></label>
+      <div class="filter-row" id="filters">
+        <button class="active" data-filter="all">Todas <span id="all-count">52</span></button>
+        <button data-filter="A">A <span id="a-count">18</span></button>
+        <button data-filter="B">B <span id="b-count">18</span></button>
+        <button data-filter="C">C <span id="c-count">16</span></button>
+      </div>
+      <div id="branch-list" class="branch-list"></div>
+      <p class="list-footer" id="list-footer"></p>
+    </aside>
+
+    <section class="map-wrap card">
+      <div class="map-heading"><div><h2>Farmacias Kielsa SPS</h2><p>Distribución por bloques geográficos</p></div><span id="map-label">Bloques A, B y C</span></div>
+      <div id="map"></div>
+      <div class="legend">
+        <p><i class="dot a"></i> Bloque A <small>Oeste / Noroeste</small></p>
+        <p><i class="dot b"></i> Bloque B <small>Centro / Norte</small></p>
+        <p><i class="dot c"></i> Bloque C <small>Sur / Este</small></p>
+        <p><i class="dot pending"></i> Coordenada pendiente</p>
+      </div>
+    </section>
+
+    <aside class="right-panel">
+      <section class="card selected-card" id="selected-card">
+        <p class="eyebrow"><i class="dot c"></i> <span id="selected-name">Bloque C seleccionado</span></p>
+        <div class="block-number"><strong id="selected-count">16</strong><span>sucursales<br>en este bloque</span></div>
+        <div class="circuit-state"><span>⌘</span><div><b>Circuito Hamiltoniano</b><p id="circuit-message">Configura las conexiones reales para calcularlo.</p></div></div>
+        <div class="distance"><span>⚠</span><b id="route-distance">Distancia pendiente de rutas</b></div>
+      </section>
+      <section class="card route-card">
+        <h2>Estado del bloque</h2>
+        <div id="route-summary" class="route-summary"></div>
+        <button class="outline" id="focus-block">Ver sucursales del bloque</button>
+      </section>
+      <section class="card candidates" id="candidates">
+        <div class="section-title"><h2>Sedes candidatas</h2><a href="#constructor">Ver detalles →</a></div>
+        <div class="candidate-grid">
+          <article class="candidate winner"><small>Mejor ubicación inicial</small><b>⌂ Candidato A</b><span>Guamilito</span><strong>L. 7,000/mes</strong><p>Agua, luz y baño privado</p></article>
+          <article class="candidate"><b>▥ Candidato B</b><span>Los Andes</span><strong>L. 11,800/mes</strong><p>Agua y seguridad</p></article>
+          <article class="candidate"><b>▥ Candidato C</b><span>Col. Trejo</span><strong>USD 1,104/mes</strong><p>Parqueo y seguridad 24/7</p></article>
+        </div>
+      </section>
+      <section class="card indicators"><h2>Indicadores generales</h2><div><p><b>3</b><span>Bloques</span></p><p><b id="indicator-branches">52</b><span>Sucursales</span></p><p><b>2–3</b><span>Vecinos meta</span></p><p><b>Google</b><span>Pesos viales</span></p></div></section>
+    </aside>
+  </main>
+
+  <section class="constructor-shell" id="constructor" hidden>
+    <div class="constructor-head"><div><p>Configuración técnica</p><h2>Constructor editable de circuitos</h2><span>Python verifica el circuito. Google Maps dibuja y actualiza los pesos viales.</span></div><button id="close-constructor">Cerrar ×</button></div>
+    <div class="controls"><label>Subgrafo de trabajo <select id="block"></select></label><label>Nodo inicial <select id="start"></select></label><button id="analyze">Buscar circuito</button><button class="secondary" id="reset">Restaurar Avance 1</button></div>
+    <div class="editor-grid">
+      <article class="editor-card"><h3>Nodos</h3><form id="node-form"><input id="node-name" placeholder="Nombre de farmacia" required><input id="node-lat" type="number" step="any" placeholder="Latitud"><input id="node-lng" type="number" step="any" placeholder="Longitud"><button>Agregar</button></form><ul id="nodes"></ul></article>
+      <article class="editor-card"><h3>Aristas y pesos</h3><form id="edge-form"><select id="from"></select><select id="to"></select><input id="weight" type="number" step="0.01" min="0.01" placeholder="km" required><button>Agregar</button></form><div id="edges"></div></article>
+    </div>
+    <div class="result-row"><div id="result"></div><button class="green" id="roads">Dibujar caminos reales</button><p id="status"></p></div>
+  </section>
+
+  <footer>Fuente de sucursales: listado oficial de Kielsa SPS · Pesos viales: Google Maps Routes API</footer>
+  <script>window.MAPS_KEY={{ maps_key|tojson }};</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

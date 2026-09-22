@@ -1,15 +1,39 @@
-# Proyecto Kielsa — Entrega 2 en Python
+# Optimizador de Rutas Kielsa SPS
 
-El servidor, las validaciones de Dirac y Ore, y la búsqueda de circuitos hamiltonianos se implementan en Python con Flask. JavaScript solo dibuja el mapa y los caminos de Google Maps dentro del navegador.
+Aplicación en Python y Flask para visualizar las 52 sucursales activas de Kielsa en San Pedro Sula, agruparlas en bloques A, B y C, y construir circuitos hamiltonianos editables.
 
-```powershell
-& "C:\Users\aleja\AppData\Local\Python\bin\python.exe" app.py
+## Ejecutar en otra computadora con Windows
+
+1. Instalar Python 3.11 o superior desde [python.org](https://www.python.org/downloads/). Durante la instalación, marcar **Add Python to PATH**.
+2. Descargar o clonar este repositorio.
+3. Abrir la carpeta `proyecto_Kielsa`.
+4. Hacer doble clic en `iniciar.bat`, o ejecutar desde PowerShell:
+
+   ```powershell
+   .\iniciar.ps1
+   ```
+
+El primer inicio instala Flask. Después abrir `http://127.0.0.1:5000` en el navegador.
+
+## Google Maps
+
+El mapa requiere una clave propia de Google Maps. Crear un archivo llamado `.env` en la raíz del proyecto, copiando `.env.example`, y completar:
+
+```text
+VITE_GOOGLE_MAPS_BROWSER_KEY=TU_CLAVE_AQUI
 ```
 
-Abre `http://127.0.0.1:5000`.
+En Google Cloud se deben habilitar **Maps JavaScript API** y **Routes API**. Para uso local, restringir la clave a estos referentes HTTP:
 
-Para ejecutar la prueba del algoritmo:
+```text
+http://localhost:5000/*
+http://127.0.0.1:5000/*
+```
+
+## Prueba del algoritmo
 
 ```powershell
-& "C:\Users\aleja\AppData\Local\Python\bin\python.exe" -m unittest discover -s tests
+py -3 -m unittest discover -s tests
 ```
+
+Los datos de las sucursales están en `datos/sucursales_kielsa_sps_2026-09-18.csv`. La distribución A, B y C se documenta en `datos/Datos Precisos-kielsa.xlsx` y se usa desde `branches.py`.
