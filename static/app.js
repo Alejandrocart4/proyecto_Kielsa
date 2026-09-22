@@ -45,7 +45,6 @@ function renderSelectedBlock() {
   $("selected-name").textContent = `${data.name} seleccionado`;
   $("selected-count").textContent = total;
   $("map-label").textContent = `${data.name} · ${data.zone}`;
-  $("route-summary").innerHTML = `<p><b>Zona:</b> ${escapeHtml(data.zone)}</p><p><b>Asignación:</b> ${total} sucursales por cercanía geográfica.</p><p><b>Siguiente paso:</b> registrar conexiones viales reales con sus vecinos.</p>`;
   const dot = $("selected-card").querySelector(".dot");
   dot.className = `dot ${selectedZone.toLowerCase()}`;
 }
@@ -188,9 +187,7 @@ function bindEvents() {
   $("search").addEventListener("input", renderBranchList);
   $("filters").addEventListener("click", (event) => { const button = event.target.closest("button"); if (!button) return; activeFilter = button.dataset.filter; [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button)); if (activeFilter !== "all") setZone(activeFilter, true); renderBranchList(); });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
-  $("focus-block").addEventListener("click", () => setZone(selectedZone, true));
   $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); drawCandidateMarkers(); });
-  $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); });
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
