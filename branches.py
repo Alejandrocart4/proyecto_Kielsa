@@ -21,9 +21,11 @@ BLOCKS = {
     "C": {"name": "Bloque C", "zone": "Sur / Este", "color": "#f5a900"},
 }
 
+EXCLUDED_BRANCHES = {"K001", "K591", "K094", "K303", "K604"}
+
 BLOCK_ASSIGNMENTS = {
-    **{code: "A" for code in "K002 K003 K008 K024 K037 K046 K049 K050 K075 K091 K101 K112 K156 K222 K017 K018 K085 K054 K591".split()},
-    **{code: "B" for code in "K056 K058 K067 K072 K076 K084 K090 K093 K099 K150 K194 K207 K142 K052 K053 K171 K253 K264 K001".split()},
+    **{code: "A" for code in "K002 K003 K008 K024 K037 K046 K049 K050 K075 K091 K101 K112 K156 K222 K017 K018 K085 K054".split()},
+    **{code: "B" for code in "K056 K058 K067 K072 K076 K084 K090 K093 K099 K150 K194 K207 K142 K052 K053 K171 K253 K264".split()},
     **{code: "C" for code in "K012 K014 K019 K066 K092 K102 K145 K168 K602 K226 K231 K063 K283 K301".split()},
 }
 
@@ -50,6 +52,8 @@ def load_active_branches() -> list[dict]:
     branches = []
     for row in rows:
         code = row["codigo"]
+        if code in EXCLUDED_BRANCHES:
+            continue
         precise = precise_rows.get(code)
         name = precise["nombre"] if precise else row["nombre_oficial"]
         address = precise["direccion"] if precise else row["direccion_oficial"]

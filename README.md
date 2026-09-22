@@ -1,6 +1,6 @@
 # Optimizador de Rutas Kielsa SPS
 
-Aplicación en Python y Flask para visualizar las 52 sucursales activas de Kielsa en San Pedro Sula, agruparlas en bloques A, B y C, y construir circuitos hamiltonianos editables.
+Aplicación en Python y Flask para visualizar las 50 sucursales activas de Kielsa en San Pedro Sula, agruparlas en bloques A, B y C, y construir circuitos hamiltonianos editables.
 
 ## Ejecutar en otra computadora con Windows
 
@@ -36,4 +36,4 @@ http://127.0.0.1:5000/*
 py -3 -m unittest discover -s tests
 ```
 
-El inventario base está en `datos/sucursales_kielsa_sps_2026-09-18.csv`. Las coordenadas y bloques precisos se leen desde `datos/sucursales_sin_K604_K094_K303.csv`. La aplicación conserva K001 y K591 para completar las 52 sucursales activas.
+El inventario base está en `datos/sucursales_kielsa_sps_2026-09-18.csv`. Las coordenadas y bloques precisos se leen desde `datos/sucursales_sin_K604_K094_K303.csv`. K001 y K591 no se incluyen porque estaban repetidas.

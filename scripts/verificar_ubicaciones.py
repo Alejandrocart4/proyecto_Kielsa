@@ -26,7 +26,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "datos"
 EXCEL = DATA / "Datos Precisos-kielsa.xlsx"
 BRANCHES = DATA / "sucursales_sin_K604_K094_K303.csv"
-OFFICIAL_BRANCHES = DATA / "sucursales_kielsa_sps_2026-09-18.csv"
 REPORT = DATA / "auditoria_ubicaciones_google_maps.csv"
 NAMESPACE = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 
@@ -97,10 +96,8 @@ def main() -> None:
         branches = list(csv.DictReader(file))
         fields = file.seek(0) or csv.DictReader(file).fieldnames
     report = []
-    reviewed_codes = set()
     changed = 0
     for branch in branches:
-        reviewed_codes.add(branch["id"])
         source = excel.get(branch["id"])
         item = {
             "id": branch["id"], "nombre": branch["nombre"], "app_latitud": branch["latitud"],
@@ -121,21 +118,6 @@ def main() -> None:
                 item["estado"] = f"error: {error}"
         report.append(item)
 
-    # K001 y K591 permanecen activos en la aplicación, pero no están en el Excel
-    # de enlaces. Se conservan con la coordenada oficial obtenida de Kielsa.
-    with OFFICIAL_BRANCHES.open(encoding="utf-8-sig", newline="") as file:
-        official_rows = list(csv.DictReader(file))
-    for official in official_rows:
-        code = official["codigo"]
-        if code in reviewed_codes or code not in {"K001", "K591"}:
-            continue
-        report.append({
-            "id": code, "nombre": official["nombre_oficial"], "app_latitud": official["latitud"],
-            "app_longitud": official["longitud"], "google_latitud": "", "google_longitud": "",
-            "diferencia_km": "", "estado": "coordenada_oficial_kielsa", "titulo_google": "",
-            "url_maps": official["enlace_mapa"],
-        })
-
     report_fields = ["id", "nombre", "app_latitud", "app_longitud", "google_latitud", "google_longitud", "diferencia_km", "estado", "titulo_google", "url_maps"]
     with REPORT.open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=report_fields)
@@ -148,8 +130,7 @@ def main() -> None:
             writer.writerows(branches)
 
     verified = sum(item["estado"] == "verificada" for item in report)
-    official = sum(item["estado"] == "coordenada_oficial_kielsa" for item in report)
-    print(f"Verificadas en Google Maps: {verified}. Conservadas de la fuente oficial de Kielsa: {official}. Coordenadas actualizadas: {changed}. Reporte: {REPORT}")
+    print(f"Verificadas en Google Maps: {verified}/{len(branches)}. Coordenadas actualizadas: {changed}. Reporte: {REPORT}")
 
 
 if __name__ == "__main__":
