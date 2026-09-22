@@ -183,7 +183,7 @@ async function analyze() {
   const cycle = data.cycle ? data.cycle.path.map((id) => escapeHtml(labels.get(id))).join(" → ") : "No hay circuito con las aristas actuales.";
   const returnPoint = data.cycle ? escapeHtml(labels.get(data.cycle.path[0])) : "—";
   $("result").innerHTML = `<p><b>Pesos:</b> ${escapeHtml(currentWork().weight_source || "Configurados manualmente.")}</p><p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Inicio y retorno:</b> ${returnPoint}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
-  if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; }
+  if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; drawCircuitEdges(); }
 }
 
 function updateEdgeWeight(from, to, km) {
@@ -191,18 +191,38 @@ function updateEdgeWeight(from, to, km) {
   if (edge) edge.weight = Math.round(km * 100) / 100;
 }
 
+function clearRouteLines() { routePolylines.forEach((line) => line.setMap(null)); routePolylines = []; }
+function routeWeight(from, to) { return currentWork().edges.find((edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from))?.weight; }
+function addRouteLine(from, to, km) {
+  const line = new google.maps.Polyline({ map, path: [{ lat: +from.lat, lng: +from.lng }, { lat: +to.lat, lng: +to.lng }], strokeColor: "#7d3ee6", strokeOpacity: .9, strokeWeight: 5, zIndex: 6 });
+  const position = { lat: (+from.lat + +to.lat) / 2, lng: (+from.lng + +to.lng) / 2 };
+  const content = `<div><b>${escapeHtml(from.name)}</b><br>↓ ${Number(km).toFixed(2)} km<br><b>${escapeHtml(to.name)}</b></div>`;
+  line.addListener("mouseover", (event) => { infoWindow.setContent(content); infoWindow.setPosition(event.latLng || position); infoWindow.open({ map }); });
+  line.addListener("mouseout", () => infoWindow.close());
+  routePolylines.push(line);
+}
+function drawCircuitEdges() {
+  if (!map || !lastCycle || $("constructor").hidden) return;
+  const nodes = new Map(currentWork().nodes.map((node) => [node.id, node]));
+  const legs = lastCycle.path.slice(0, -1).map((from, index) => [from, lastCycle.path[index + 1]]);
+  clearRouteLines();
+  legs.forEach(([fromId, toId]) => {
+    const from = nodes.get(fromId), to = nodes.get(toId), km = routeWeight(fromId, toId);
+    if (valid(from) && valid(to) && Number.isFinite(Number(km))) addRouteLine(from, to, km);
+  });
+}
+
 async function drawRoads() {
   if (!map || !Route || !lastCycle) { $("status").textContent = "Primero busca un circuito y espera a que cargue el mapa."; return; }
   const nodes = new Map(currentWork().nodes.map((node) => [node.id, node]));
   const legs = lastCycle.path.slice(0, -1).map((from, index) => [from, lastCycle.path[index + 1]]);
   if (legs.some(([from, to]) => !valid(nodes.get(from)) || !valid(nodes.get(to)))) { $("status").textContent = "Faltan coordenadas en un nodo del circuito."; return; }
-  routePolylines.forEach((line) => line.setMap(null)); routePolylines = []; $("status").textContent = "Consultando caminos por carretera…";
+  clearRouteLines(); $("status").textContent = "Consultando caminos por carretera…";
   try {
     for (const [fromId, toId] of legs) {
       const from = nodes.get(fromId), to = nodes.get(toId);
       const { routes } = await Route.computeRoutes({ origin: { lat: +from.lat, lng: +from.lng }, destination: { lat: +to.lat, lng: +to.lng }, travelMode: "DRIVING", fields: ["distanceMeters"] });
       const route = routes?.[0]; if (!route?.distanceMeters) throw new Error(`No hay ruta para ${from.name}.`);
-      routePolylines.push(new google.maps.Polyline({ map, path: [{ lat: +from.lat, lng: +from.lng }, { lat: +to.lat, lng: +to.lng }], strokeColor: "#7d3ee6", strokeWeight: 5 }));
       updateEdgeWeight(fromId, toId, route.distanceMeters / 1000);
     }
     currentWork().weight_source = "Kilómetros por carretera consultados con Google Maps Routes API.";
@@ -232,8 +252,8 @@ function bindEvents() {
   });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
   $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); drawCandidateMarkers(); });
-  $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); });
-  $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; });
+  $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); drawCircuitEdges(); });
+  $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; clearRouteLines(); });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
   $("candidate-select").addEventListener("change", (event) => selectCandidate(event.target.value));
