@@ -23,8 +23,8 @@
       <h2>Sucursales oficiales SPS <span id="list-total">(52)</span></h2>
       <label class="search"><span>⌕</span><input id="search" placeholder="Buscar sucursal, zona o código"></label>
       <div class="filter-row" id="filters">
-        <button data-filter="all">Todas <span id="all-count">52</span></button>
-        <button class="active" data-filter="A">A <span id="a-count">18</span></button>
+        <button class="active" data-filter="all">Todas <span id="all-count">52</span></button>
+        <button data-filter="A">A <span id="a-count">18</span></button>
         <button data-filter="B">B <span id="b-count">18</span></button>
         <button data-filter="C">C <span id="c-count">16</span></button>
       </div>
@@ -50,6 +50,7 @@
         <div class="block-number"><strong id="selected-count">16</strong><span>sucursales<br>en este bloque</span></div>
         <div class="circuit-state"><span>⌘</span><div><b>Circuito Hamiltoniano</b><p id="circuit-message">Configura las conexiones reales para calcularlo.</p></div></div>
         <div class="distance"><span>⚠</span><b id="route-distance">Distancia pendiente de rutas</b></div>
+        <button class="outline circuit-button" id="open-constructor">Abrir constructor de circuitos</button>
       </section>
       <section class="card candidates" id="candidates">
         <div class="section-title"><h2>Sedes candidatas</h2><a href="#constructor">Ver detalles →</a></div>

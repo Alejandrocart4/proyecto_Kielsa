@@ -1,5 +1,5 @@
 let branches = [], blockInfo = {}, workingBlocks = [];
-let selectedZone = "A", activeFilter = "A", selectedId = null;
+let selectedZone = "A", activeFilter = "all", selectedId = null;
 let map, Route, infoWindow, dashboardMarkers = [], candidateMarkers = [], routePolylines = [], lastCycle = null;
 
 const $ = (id) => document.getElementById(id);
@@ -206,6 +206,7 @@ function bindEvents() {
   });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
   $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); drawCandidateMarkers(); });
+  $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); });
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
