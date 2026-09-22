@@ -157,7 +157,7 @@ async function refreshCandidateRoutes() {
     workingBlocks = await buildCandidateRoutes();
     const preferredId = activeFilter !== "all" ? activeFilter : previousId;
     selectedId = workingBlocks.some((block) => block.id === preferredId) ? preferredId : workingBlocks[0].id;
-    saveWorkingBlocks(); renderConstructor();
+    saveWorkingBlocks(); renderConstructor(); await analyze();
   } catch (error) { $("status").textContent = error.message; }
 }
 function option(items, selected) { return items.map((item) => `<option value="${item.id}" ${item.id === selected ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join(""); }
