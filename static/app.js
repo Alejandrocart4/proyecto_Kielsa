@@ -94,7 +94,7 @@ function selectCandidate(id) {
   document.querySelectorAll(".candidate").forEach((card) => card.classList.toggle("active", card.dataset.candidate === id));
   if ($("candidate-select")) $("candidate-select").value = id;
   drawCandidateMarkers();
-  if (!$("constructor").hidden && baseBlocks.length) refreshCandidateRoutes();
+  if (baseBlocks.length) refreshCandidateRoutes();
   if (!map) return;
   map.panTo({ lat: candidate.lat, lng: candidate.lng });
   map.setZoom(15);
@@ -152,11 +152,12 @@ async function buildCandidateRoutes(id = selectedCandidateId) {
 }
 async function refreshCandidateRoutes() {
   try {
-    routePolylines.forEach((line) => line.setMap(null)); routePolylines = []; lastCycle = null;
+    clearCircuitDisplay();
     const previousId = selectedId;
     workingBlocks = await buildCandidateRoutes();
-    selectedId = workingBlocks.some((block) => block.id === previousId) ? previousId : workingBlocks[0].id;
-    saveWorkingBlocks(); renderConstructor(); await analyze();
+    const preferredId = activeFilter !== "all" ? activeFilter : previousId;
+    selectedId = workingBlocks.some((block) => block.id === preferredId) ? preferredId : workingBlocks[0].id;
+    saveWorkingBlocks(); renderConstructor();
   } catch (error) { $("status").textContent = error.message; }
 }
 function option(items, selected) { return items.map((item) => `<option value="${item.id}" ${item.id === selected ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join(""); }
@@ -257,7 +258,7 @@ function bindEvents() {
     clearCircuitDisplay();
     activeFilter = button.dataset.filter;
     [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button));
-    if (activeFilter !== "all") { selectedZone = activeFilter; renderSelectedBlock(); }
+    if (activeFilter !== "all") { selectedZone = activeFilter; selectedId = activeFilter; renderSelectedBlock(); renderConstructor(); }
     renderBranchList(); drawDashboardMarkers();
     fitToBranches(activeFilter === "all" ? branches : blockBranches(activeFilter));
   });
@@ -283,5 +284,5 @@ function bindEvents() {
   baseBlocks = workData.blocks;
   workingBlocks = await buildCandidateRoutes();
   selectedId = workingBlocks[0].id;
-  renderCounters(); renderBranchList(); renderSelectedBlock(); renderConstructor(); bindEvents(); analyze(); initialiseMap();
+  renderCounters(); renderBranchList(); renderSelectedBlock(); renderConstructor(); bindEvents(); initialiseMap();
 })();
