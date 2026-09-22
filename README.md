@@ -36,4 +36,4 @@ http://127.0.0.1:5000/*
 py -3 -m unittest discover -s tests
 ```
 
-Los datos de las sucursales están en `datos/sucursales_kielsa_sps_2026-09-18.csv`. La distribución A, B y C se documenta en `datos/Datos Precisos-kielsa.xlsx` y se usa desde `branches.py`.
+El inventario base está en `datos/sucursales_kielsa_sps_2026-09-18.csv`. Las coordenadas y bloques precisos se leen desde `datos/sucursales_sin_K604_K094_K303.csv`. La aplicación conserva K001 y K591 para completar las 52 sucursales activas.
