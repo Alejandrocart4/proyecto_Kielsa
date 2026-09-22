@@ -59,7 +59,7 @@ function clearCandidateMarkers() { candidateMarkers.forEach((marker) => marker.s
 function drawDashboardMarkers() {
   if (!map) return;
   clearDashboardMarkers();
-  branches.filter((branch) => branch.block === selectedZone && valid(branch)).forEach((branch) => {
+  branches.filter((branch) => (activeFilter === "all" || branch.block === activeFilter) && valid(branch)).forEach((branch) => {
     const marker = new google.maps.Marker({ map, position: { lat: Number(branch.lat), lng: Number(branch.lng) }, title: `${branch.id} · ${branch.name}`, icon: markerIcon(branch.block, branch.block === selectedZone), zIndex: branch.block === selectedZone ? 3 : 1 });
     marker.addListener("click", () => {
       infoWindow.setContent(`<b>${escapeHtml(branch.id)} · ${escapeHtml(branch.name)}</b><br><span>${escapeHtml(branch.address)}</span><br><a target="_blank" rel="noreferrer" href="${branch.map_url}">Abrir en Google Maps</a>`);
@@ -185,7 +185,14 @@ async function drawRoads() {
 
 function bindEvents() {
   $("search").addEventListener("input", renderBranchList);
-  $("filters").addEventListener("click", (event) => { const button = event.target.closest("button"); if (!button) return; activeFilter = button.dataset.filter; [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button)); if (activeFilter !== "all") setZone(activeFilter, true); renderBranchList(); });
+  $("filters").addEventListener("click", (event) => {
+    const button = event.target.closest("button"); if (!button) return;
+    activeFilter = button.dataset.filter;
+    [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button));
+    if (activeFilter !== "all") { selectedZone = activeFilter; renderSelectedBlock(); }
+    renderBranchList(); drawDashboardMarkers();
+    fitToBranches(activeFilter === "all" ? branches : blockBranches(activeFilter));
+  });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
   $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); drawCandidateMarkers(); });
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; });
