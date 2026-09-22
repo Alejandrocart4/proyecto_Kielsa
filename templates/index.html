@@ -10,19 +10,11 @@
   <header class="topbar">
     <div class="brand"><span class="brand-cross">+</span><div><strong>Kielsa</strong><small>Salud y bienestar para todos</small></div></div>
     <div class="title"><h1>Optimizador de Rutas Kielsa SPS</h1><p>Circuitos Hamiltonianos por bloque y evaluación de sede técnica</p></div>
-    <div class="city-card"><span>●</span><div><b>San Pedro Sula, Cortés</b><small><span id="branch-total">52</span> sucursales activas</small></div></div>
-    <div class="date-card"><span>▣</span><div><b id="today">—</b><small id="clock">—</small></div></div>
   </header>
 
   <nav class="toolbar">
     <button class="primary" id="load-branches">▣ Cargar sucursales oficiales</button>
-    <button class="green" id="show-all">⌘ Mostrar todos los bloques</button>
-    <button class="purple" id="open-constructor">⌘ Calcular circuito Hamiltoniano</button>
     <button class="plain" id="candidate-button">▥ Comparar sedes</button>
-    <label class="block-picker">Bloque seleccionado:
-      <select id="zone-select"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-    </label>
-    <button class="settings" id="toggle-settings">⚙ Configuración</button>
   </nav>
 
   <main class="dashboard">
@@ -30,8 +22,8 @@
       <h2>Sucursales oficiales SPS <span id="list-total">(52)</span></h2>
       <label class="search"><span>⌕</span><input id="search" placeholder="Buscar sucursal, zona o código"></label>
       <div class="filter-row" id="filters">
-        <button class="active" data-filter="all">Todas <span id="all-count">52</span></button>
-        <button data-filter="A">A <span id="a-count">18</span></button>
+        <button data-filter="all">Todas <span id="all-count">52</span></button>
+        <button class="active" data-filter="A">A <span id="a-count">18</span></button>
         <button data-filter="B">B <span id="b-count">18</span></button>
         <button data-filter="C">C <span id="c-count">16</span></button>
       </div>
@@ -61,13 +53,14 @@
         <h2>Estado del bloque</h2>
         <div id="route-summary" class="route-summary"></div>
         <button class="outline" id="focus-block">Ver sucursales del bloque</button>
+        <button class="outline route-action" id="open-constructor">Configurar circuito</button>
       </section>
       <section class="card candidates" id="candidates">
         <div class="section-title"><h2>Sedes candidatas</h2><a href="#constructor">Ver detalles →</a></div>
         <div class="candidate-grid">
-          <article class="candidate winner"><small>Mejor ubicación inicial</small><b>⌂ Galería Guamilito</b><span>8 calle, 7 Avenida NO</span><strong>L. 7,000/mes</strong><p>Agua, luz y baño privado</p></article>
-          <article class="candidate"><b>▥ Plaza Los Caminantes</b><span>GX69+R28, SPS</span><strong>L. 11,800/mes</strong><p>Agua y seguridad</p></article>
-          <article class="candidate"><b>▥ Plaza Trejo</b><span>10 calle, 23 Avenida S</span><strong>USD 2,868/mes</strong><p>Parqueo y seguridad 24/7</p></article>
+          <article class="candidate winner active" data-candidate="A"><small>Mejor ubicación inicial</small><b>⌂ Galería Guamilito</b><span>8 calle, 7 Avenida NO</span><strong>L. 7,000/mes</strong><p>Agua, luz y baño privado</p></article>
+          <article class="candidate" data-candidate="B"><b>▥ Plaza Los Caminantes</b><span>GX69+R28, SPS</span><strong>L. 11,800/mes</strong><p>Agua y seguridad</p></article>
+          <article class="candidate" data-candidate="C"><b>▥ Plaza Trejo</b><span>10 calle, 23 Avenida S</span><strong>USD 2,868/mes</strong><p>Parqueo y seguridad 24/7</p></article>
         </div>
       </section>
       <section class="card indicators"><h2>Indicadores generales</h2><div><p><b>3</b><span>Bloques</span></p><p><b id="indicator-branches">52</b><span>Sucursales</span></p><p><b>2–3</b><span>Vecinos meta</span></p><p><b>Google</b><span>Pesos viales</span></p></div></section>

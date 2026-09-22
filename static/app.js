@@ -1,24 +1,22 @@
 let branches = [], blockInfo = {}, workingBlocks = [];
-let selectedZone = "A", activeFilter = "all", selectedId = null;
-let map, Route, infoWindow, dashboardMarkers = [], routePolylines = [], lastCycle = null;
+let selectedZone = "A", activeFilter = "A", selectedId = null;
+let map, Route, infoWindow, dashboardMarkers = [], candidateMarkers = [], routePolylines = [], lastCycle = null;
 
 const $ = (id) => document.getElementById(id);
 const colors = { A: "#1677e8", B: "#11a65b", C: "#f5a900" };
+const candidates = {
+  A: { name: "Galería Guamilito", lat: 15.5125222, lng: -88.02658734, price: "L. 7,000/mes" },
+  B: { name: "Plaza Los Caminantes", lat: 15.5122975, lng: -88.03203119, price: "L. 11,800/mes" },
+  C: { name: "Plaza Trejo", lat: 15.4980516, lng: -88.0461595, price: "USD 2,868/mes" },
+};
 const currentWork = () => workingBlocks.find((item) => item.id === selectedId);
 const valid = (node) => Number.isFinite(Number(node?.lat)) && Number.isFinite(Number(node?.lng)) && !(Number(node.lat) === 0 && Number(node.lng) === 0);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
-
-function updateClock() {
-  const now = new Date();
-  $("today").textContent = now.toLocaleDateString("es-HN", { day: "2-digit", month: "short", year: "numeric" });
-  $("clock").textContent = now.toLocaleTimeString("es-HN", { hour: "2-digit", minute: "2-digit" });
-}
 
 function blockBranches(zone = selectedZone) { return branches.filter((branch) => branch.block === zone); }
 
 function renderCounters() {
   const count = (zone) => branches.filter((branch) => branch.block === zone).length;
-  $("branch-total").textContent = branches.length;
   $("list-total").textContent = `(${branches.length})`;
   $("all-count").textContent = branches.length;
   $("indicator-branches").textContent = branches.length;
@@ -44,7 +42,6 @@ function renderBranchList() {
 function renderSelectedBlock() {
   const data = blockInfo[selectedZone] || { name: `Bloque ${selectedZone}`, zone: "" };
   const total = blockBranches().length;
-  $("zone-select").value = selectedZone;
   $("selected-name").textContent = `${data.name} seleccionado`;
   $("selected-count").textContent = total;
   $("map-label").textContent = `${data.name} · ${data.zone}`;
@@ -58,11 +55,12 @@ function markerIcon(zone, focused) {
 }
 
 function clearDashboardMarkers() { dashboardMarkers.forEach((marker) => marker.setMap(null)); dashboardMarkers = []; }
+function clearCandidateMarkers() { candidateMarkers.forEach((marker) => marker.setMap(null)); candidateMarkers = []; }
 
 function drawDashboardMarkers() {
   if (!map) return;
   clearDashboardMarkers();
-  branches.filter(valid).forEach((branch) => {
+  branches.filter((branch) => branch.block === selectedZone && valid(branch)).forEach((branch) => {
     const marker = new google.maps.Marker({ map, position: { lat: Number(branch.lat), lng: Number(branch.lng) }, title: `${branch.id} · ${branch.name}`, icon: markerIcon(branch.block, branch.block === selectedZone), zIndex: branch.block === selectedZone ? 3 : 1 });
     marker.addListener("click", () => {
       infoWindow.setContent(`<b>${escapeHtml(branch.id)} · ${escapeHtml(branch.name)}</b><br><span>${escapeHtml(branch.address)}</span><br><a target="_blank" rel="noreferrer" href="${branch.map_url}">Abrir en Google Maps</a>`);
@@ -70,6 +68,34 @@ function drawDashboardMarkers() {
     });
     dashboardMarkers.push(marker);
   });
+}
+
+function drawCandidateMarkers() {
+  if (!map) return;
+  clearCandidateMarkers();
+  Object.entries(candidates).forEach(([id, candidate]) => {
+    const marker = new google.maps.Marker({
+      map,
+      position: { lat: candidate.lat, lng: candidate.lng },
+      title: candidate.name,
+      label: { text: id, color: "#ffffff", fontWeight: "800" },
+      icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: "#7d3ee6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, scale: 10 },
+      zIndex: 8,
+    });
+    marker.addListener("click", () => selectCandidate(id));
+    candidateMarkers.push(marker);
+  });
+}
+
+function selectCandidate(id) {
+  const candidate = candidates[id];
+  document.querySelectorAll(".candidate").forEach((card) => card.classList.toggle("active", card.dataset.candidate === id));
+  if (!map) return;
+  map.panTo({ lat: candidate.lat, lng: candidate.lng });
+  map.setZoom(15);
+  infoWindow.setContent(`<b>${candidate.name}</b><br>${candidate.price}`);
+  infoWindow.setPosition({ lat: candidate.lat, lng: candidate.lng });
+  infoWindow.open({ map });
 }
 
 function fitToBranches(items) {
@@ -105,7 +131,7 @@ async function initialiseMap() {
     ({ Route } = await google.maps.importLibrary("routes"));
     map = new mapsLibrary.Map($("map"), { center: { lat: 15.5042, lng: -88.025 }, zoom: 12, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
     infoWindow = new google.maps.InfoWindow();
-    drawDashboardMarkers(); fitToBranches(branches);
+    drawDashboardMarkers(); drawCandidateMarkers(); fitToBranches(blockBranches());
   } catch (error) { $("map").textContent = `${error.message} Verifica Maps JavaScript API y Routes API.`; }
 }
 
@@ -149,27 +175,25 @@ async function drawRoads() {
   try {
     for (const [fromId, toId] of legs) {
       const from = nodes.get(fromId), to = nodes.get(toId);
-      const { routes } = await Route.computeRoutes({ origin: { lat: +from.lat, lng: +from.lng }, destination: { lat: +to.lat, lng: +to.lng }, travelMode: "DRIVING", fields: ["path", "distanceMeters"] });
-      const route = routes?.[0]; if (!route?.path?.length) throw new Error(`No hay ruta para ${from.name}.`);
-      routePolylines.push(new google.maps.Polyline({ map, path: route.path, strokeColor: "#7d3ee6", strokeWeight: 5 }));
+      const { routes } = await Route.computeRoutes({ origin: { lat: +from.lat, lng: +from.lng }, destination: { lat: +to.lat, lng: +to.lng }, travelMode: "DRIVING", fields: ["distanceMeters"] });
+      const route = routes?.[0]; if (!route?.distanceMeters) throw new Error(`No hay ruta para ${from.name}.`);
+      routePolylines.push(new google.maps.Polyline({ map, path: [{ lat: +from.lat, lng: +from.lng }, { lat: +to.lat, lng: +to.lng }], strokeColor: "#7d3ee6", strokeWeight: 5 }));
       updateEdgeWeight(fromId, toId, route.distanceMeters / 1000);
     }
-    saveWorkingBlocks(); renderConstructor(); await analyze(); $("status").textContent = "Caminos dibujados y pesos actualizados con kilómetros reales.";
+    saveWorkingBlocks(); renderConstructor(); await analyze(); $("status").textContent = "Líneas rectas dibujadas y pesos actualizados con kilómetros reales.";
   } catch (error) { $("status").textContent = error.message; }
 }
 
 function bindEvents() {
   $("search").addEventListener("input", renderBranchList);
-  $("filters").addEventListener("click", (event) => { const button = event.target.closest("button"); if (!button) return; activeFilter = button.dataset.filter; [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button)); renderBranchList(); });
+  $("filters").addEventListener("click", (event) => { const button = event.target.closest("button"); if (!button) return; activeFilter = button.dataset.filter; [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button)); if (activeFilter !== "all") setZone(activeFilter, true); renderBranchList(); });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
-  $("zone-select").addEventListener("change", (event) => setZone(event.target.value));
   $("focus-block").addEventListener("click", () => setZone(selectedZone, true));
-  $("show-all").addEventListener("click", () => { activeFilter = "all"; [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item.dataset.filter === "all")); renderBranchList(); drawDashboardMarkers(); fitToBranches(branches); });
-  $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); });
+  $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); drawCandidateMarkers(); });
   $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); });
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; });
-  $("toggle-settings").addEventListener("click", () => { $("constructor").hidden = !$("constructor").hidden; if (!$("constructor").hidden) $("constructor").scrollIntoView({ behavior: "smooth" }); });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
+  $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
   $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); analyze(); });
   $("analyze").addEventListener("click", analyze); $("roads").addEventListener("click", drawRoads);
   $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/blocks")).json(); workingBlocks = data.blocks; selectedId = workingBlocks[0].id; saveWorkingBlocks(); renderConstructor(); analyze(); });
@@ -183,5 +207,5 @@ function bindEvents() {
   const [branchData, workData] = await Promise.all([fetch("/api/branches").then((response) => response.json()), fetch("/api/blocks").then((response) => response.json())]);
   branches = branchData.branches; blockInfo = branchData.block_info;
   const stored = localStorage.getItem("kielsa-python-blocks"); workingBlocks = stored ? JSON.parse(stored) : workData.blocks; selectedId = workingBlocks[0].id;
-  updateClock(); setInterval(updateClock, 30000); renderCounters(); renderBranchList(); renderSelectedBlock(); renderConstructor(); bindEvents(); analyze(); initialiseMap();
+  renderCounters(); renderBranchList(); renderSelectedBlock(); renderConstructor(); bindEvents(); analyze(); initialiseMap();
 })();
