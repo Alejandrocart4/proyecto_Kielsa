@@ -74,7 +74,7 @@ function drawDashboardMarkers() {
 function drawCandidateMarkers() {
   if (!map) return;
   clearCandidateMarkers();
-  Object.entries(candidates).forEach(([id, candidate]) => {
+  Object.entries(candidates).filter(([id]) => id === selectedCandidateId).forEach(([id, candidate]) => {
     const marker = new google.maps.Marker({
       map,
       position: { lat: candidate.lat, lng: candidate.lng },
@@ -93,6 +93,7 @@ function selectCandidate(id) {
   const candidate = candidates[id];
   document.querySelectorAll(".candidate").forEach((card) => card.classList.toggle("active", card.dataset.candidate === id));
   if ($("candidate-select")) $("candidate-select").value = id;
+  drawCandidateMarkers();
   if (!$("constructor").hidden && baseBlocks.length) refreshCandidateRoutes();
   if (!map) return;
   map.panTo({ lat: candidate.lat, lng: candidate.lng });
@@ -176,6 +177,7 @@ function renderConstructor() {
 }
 
 async function analyze() {
+  clearRouteLines(); lastCycle = null;
   const response = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ block: currentWork(), start_id: $("start").value }) });
   const data = await response.json();
   if (!response.ok) { $("result").textContent = data.error; return; }
