@@ -11,7 +11,9 @@ def build_adjacency(block: dict) -> dict[str, list[tuple[str, float]]]:
     for edge in block.get("edges", []):
         origin, destination = edge.get("from"), edge.get("to")
         weight = float(edge.get("weight", 0))
-        if origin not in adjacency or destination not in adjacency or origin == destination or weight <= 0:
+        # Dos sucursales pueden estar dentro del mismo centro comercial y compartir
+        # coordenadas. Una arista de 0 km sigue siendo válida entre nodos distintos.
+        if origin not in adjacency or destination not in adjacency or origin == destination or weight < 0:
             continue
         adjacency[origin].append((destination, weight))
         adjacency[destination].append((origin, weight))

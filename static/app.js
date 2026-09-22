@@ -233,7 +233,7 @@ async function drawRoads() {
     for (const [fromId, toId] of legs) {
       const from = nodes.get(fromId), to = nodes.get(toId);
       const { routes } = await Route.computeRoutes({ origin: { lat: +from.lat, lng: +from.lng }, destination: { lat: +to.lat, lng: +to.lng }, travelMode: "DRIVING", fields: ["distanceMeters"] });
-      const route = routes?.[0]; if (!route?.distanceMeters) throw new Error(`No hay ruta para ${from.name}.`);
+      const route = routes?.[0]; if (!route || route.distanceMeters === undefined) throw new Error(`No hay ruta para ${from.name}.`);
       updateEdgeWeight(fromId, toId, route.distanceMeters / 1000);
     }
     currentWork().weight_source = "Kilómetros por carretera consultados con Google Maps Routes API.";

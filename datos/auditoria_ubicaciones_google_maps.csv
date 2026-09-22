@@ -1,0 +1,53 @@
+id,nombre,app_latitud,app_longitud,google_latitud,google_longitud,diferencia_km,estado,titulo_google,url_maps
+K002,KIELSA SPS PAZ BARAHONA,15.4947684,-88.0333188,15.4947684,-88.0333188,0.0,verificada,Farmacia Kielsa #002,https://maps.app.goo.gl/KoMKtbju4KVhCFXf7
+K003,KIELSA SPS LOS ANDES,15.5117006,-88.0368379,15.5117006,-88.0368379,0.0,verificada,Farmacia Kielsa #003,https://maps.app.goo.gl/Tg12ZtAH9MysCf6d9
+K008,KIELSA SPS CEMESA,15.4885883,-88.0345701,15.4885883,-88.0345701,0.0,verificada,Farmacia Kielsa #008,https://maps.app.goo.gl/ErX8QMnA35nKg9qC6
+K012,KIELSA SPS MAXI PALMAS,15.4891086,-88.0190501,15.4891086,-88.0190501,0.0,verificada,Farmacia Kielsa #012,https://maps.app.goo.gl/sxtVMrN7T2PXfKK39
+K014,KIELSA SPS MAXI S. LA LIMA,15.5046341,-88.0064857,15.5046341,-88.0064857,0.0,verificada,Maxi Despensa • Salida a La Lima,https://maps.app.goo.gl/7W48NAoAXYskcJ9e8
+K019,KIELSA SPS DIUNSA,15.5040817,-88.0119618,15.5040817,-88.0119618,0.0,verificada,Farmacia Kielsa #019,https://maps.app.goo.gl/x8mAaokQuCMSVBmeA
+K024,KIELSA SPS CAPITAL,15.4982006,-88.0365033,15.4982006,-88.0365033,0.0,verificada,Farmacia Kielsa #024,https://maps.app.goo.gl/vHhjMrcGVr3a92ya9
+K037,KIELSA SPS 3RA AVENIDA,15.5044500,-88.0254697,15.50445,-88.0254697,0.0,verificada,Farmacia Kielsa peatonal,https://maps.app.goo.gl/sTy1wtyfMeM6qnH1A
+K046,KIELSA SPS SARITA,15.5009710,-88.0381307,15.500971,-88.0381307,0.0,verificada,Farmacia Kielsa #046,https://maps.app.goo.gl/9fS4ep9FbKrcQokE8
+K049,KIELSA SPS POLICLINICA,15.5108842,-88.0306382,15.5108842,-88.0306382,0.0,verificada,Policlínica Hondureña,https://maps.app.goo.gl/39fByik24wu5txYa6
+K050,KIELSA SPS BELLA VISTA,15.5070617,-88.0419475,15.5070617,-88.0419475,0.0,verificada,Farmacia Kielsa #050,https://maps.app.goo.gl/NaZ9rqdFBdC5K32Z6
+K056,KIELSA SPS CATARINO RIVAS,15.5253936,-88.0395453,15.5253936,-88.0395453,0.0,verificada,Farmacia Kielsa #056,https://maps.app.goo.gl/YnqHhA8HZee4FDJY7
+K058,KIELSA SPS HOSPITAL DEL VALLE I,15.5372130,-88.0149712,15.537213,-88.0149712,0.0,verificada,Farmacia Kielsa #058,https://maps.app.goo.gl/uRYWyrvi1Ekcq16R8
+K066,KIELSA SPS SATELITE,15.4870060,-87.9850150,15.487006,-87.985015,0.0,verificada,Farmacia Kielsa,https://maps.app.goo.gl/BDKYc8FuF1PYe5tr6
+K067,KIELSA SPS TARA,15.5440100,-88.0144300,15.54401,-88.01443,0.0,verificada,Farmacia Kielsa #067,https://maps.app.goo.gl/gwxGHAtDhLgvSuKS7
+K072,KIELSA SPS COLL FASHION,15.5632843,-88.0229643,15.5632843,-88.0229643,0.0,verificada,UNITEC,https://maps.app.goo.gl/GyX8nxgHaQhCRTzr7
+K075,KIELSA SPS CLINICA LOS ANDES,15.5162056,-88.0288224,15.5162056,-88.0288224,0.0,verificada,Farmacia Kielsa #075,https://maps.app.goo.gl/CT2HLgAdhn6UpxYK9
+K076,KIELSA SPS GALENOS,15.5151750,-88.0288570,15.515175,-88.028857,0.0,verificada,Centro Médico Galenos,https://maps.app.goo.gl/3qrknji6xBQmXp588
+K084,KIELSA SPS BARANDILLAS,15.5162911,-88.0138845,15.5162911,-88.0138845,0.0,verificada,Kielsa Clinica y Laboratorio #53,https://maps.app.goo.gl/PsfZt1eY95sfRLbj9
+K090,KIELSA SPS REDONDEL,15.5178804,-88.0250610,15.5178804,-88.025061,0.0,verificada,Farmacia Kielsa #090,https://maps.app.goo.gl/7aU5j6sdPCnLDdRu6
+K091,KIELSA SPS LA COLONIA #24 PRADO ALTO,15.4853125,-88.0337656,15.4853125,-88.0337656,0.0,verificada,Supermercados La Colonia T24,https://maps.app.goo.gl/g9WpjssSmG5GWisQ9
+K092,KIELSA SPS UNO SANTA MARTA,15.4975462,-87.9869528,15.4975462,-87.9869528,0.0,verificada,UNO Santa Martha,https://maps.app.goo.gl/p5feB9yhtP4rjYA98
+K093,KIELSA SPS UNO EL EDEN,15.5481445,-88.0080431,15.5481445,-88.0080431,0.0,verificada,Farmacia Kielsa,https://maps.app.goo.gl/Th3cLWM38495gob67
+K099,KIELSA SPS PLAZA PEDREGAL,15.5243689,-88.0384144,15.5243689,-88.0384144,0.0,verificada,Farmacia Kielsa #099,https://maps.app.goo.gl/ZSdoTQwNJ7axhnuJ7
+K101,KIELSA SPS CENTRO I,15.5037402,-88.0260913,15.5037402,-88.0260913,0.0,verificada,Farmacia Kielsa #101,https://maps.app.goo.gl/xQsbwNbX5i8VenVw9
+K102,KIELSA SPS LAS PALMAS,15.4896552,-88.0195652,15.4896552,-88.0195652,0.0,verificada,Farmacia Kielsa #102,https://maps.app.goo.gl/15AkTiUMPKAE2mUV8
+K112,KIELSA SPS CIRCUNVALACION,15.5140518,-88.0346898,15.5140518,-88.0346898,0.0,verificada,Farmacia Kielsa #112,https://maps.app.goo.gl/dLBJqXY5qeQJzpTq9
+K145,KIELSA SPS 20 CALLE,15.4861470,-88.0167294,15.486147,-88.0167294,0.0,verificada,Farmacia Kielsa #145,https://maps.app.goo.gl/EMggzrnFhUsknJv99
+K150,KIELSA SPS NORTH POINT PLAZA,15.5298011,-88.0258987,15.5298011,-88.0258987,0.0,verificada,Zona Juniana,https://maps.app.goo.gl/Sns1vjsvxtekSpSM8
+K156,KIELSA SPS PLAZA TIERRA SANTA,15.4882248,-88.0367293,15.4882248,-88.0367293,0.0,verificada,Plaza Tierra Santa,https://maps.app.goo.gl/Mn4cazSvnYGJDgKXA
+K168,KIELSA SPS ISLAS DEL PROGRESO,15.4713702,-88.0028495,15.4713702,-88.0028495,0.0,verificada,Farmacia Kielsa #168,https://maps.app.goo.gl/Q2pfGzBdNry6sP1p9
+K194,KIELSA SPS LA COLONIA #23 ALAMOS,15.5473677,-88.0112419,15.5473677,-88.0112419,0.0,verificada,Supermercados La Colonia No. 23 - Los Alamos,https://maps.app.goo.gl/nNQMeDYvPJqCwrw89
+K207,KIELSA SPS PLAZA LAS MERCEDES,15.5536311,-87.9983593,15.5536311,-87.9983593,0.0,verificada,Farmacia Kielsa #207,https://maps.app.goo.gl/og7nBNMnx9X1fq359
+K222,KIELSA SPS CENTRO II,15.5060182,-88.0259521,15.5060182,-88.0259521,0.0,verificada,Farmacia Kielsa #222,https://maps.app.goo.gl/HBGcsBbgzmE4ChSv6
+K602,KIELSA SPS PLAZA EL PORTAL,15.4744997,-87.9703413,15.4744997,-87.9703413,0.0,verificada,Kielsa,https://maps.app.goo.gl/qyhm9z6SeYagoDXj7
+K226,KIELSA SPS 27 CALLE,15.4774023,-87.9859655,15.4774023,-87.9859655,0.0,verificada,Farmacia Kielsa #226,https://maps.app.goo.gl/852x6gmbq6EReGPG6
+K231,KIELSA SPS LA COLONIA #21 SAN JOSE,15.4846187,-88.0061284,15.4846187,-88.0061284,0.0,verificada,Farmacia Kielsa • Plaza San José,https://maps.app.goo.gl/Eoa5SGwSZ1iPpRAR8
+K063,KIELSA SPS MEGAPLAZA,15.5033423,-88.0054707,15.5033423,-88.0054707,0.0,verificada,Kielsa • Mega Mall - 63,https://maps.app.goo.gl/tPTZMAb262fZFkHz7
+K017,KIELSA SPS CITY MALL NIVEL I,15.4965439,-88.0361560,15.4965439,-88.036156,0.0,verificada,City Mall San Pedro Sula,https://maps.app.goo.gl/ibrAgLn87Ngsq3dt7
+K018,KIELSA SPS CITY MALL NIVEL II,15.4968188,-88.0364441,15.4968188,-88.0364441,0.0,verificada,Farmacia Kielsa • City Mall,https://maps.app.goo.gl/s7FzPHW4na2S4R9i6
+K085,KIELSA SPS MULTIPLAZA,15.4944041,-88.0342137,15.4944041,-88.0342137,0.0,verificada,Farmacia Kielsa • Multiplaza #085,https://maps.app.goo.gl/Y1SWDo2kArDQ7BA4A
+K054,KIELSA SPS PASAJE VALLE,15.5044836,-88.0249600,15.5044836,-88.02496,0.0,verificada,Mall Pasaje Valle,https://maps.app.goo.gl/xApyjGEukVf7bYeN7
+K142,KIELSA SPS ALTARA,15.5627962,-88.0216935,15.5627962,-88.0216935,0.0,verificada,Farmacia Kielsa #142,https://maps.app.goo.gl/EDExdCA3b554kwwY6
+K052,KIELSA SPS GALERIAS DEL VALLE,15.5305640,-88.0291080,15.530564,-88.029108,0.0,verificada,,https://maps.app.goo.gl/7zLa5fxwNWsQkBjU8
+K053,KIELSA SPS ENTRADA A COL HONDURAS,15.5162911,-88.0138845,15.5162911,-88.0138845,0.0,verificada,Kielsa Clinica y Laboratorio #53,https://maps.app.goo.gl/KgR4swacaidiZymT9
+K171,KIELSA SPS STIBYS,15.5434709,-88.0258603,15.5434709,-88.0258603,0.0,verificada,Farmacia Kielsa #171 Stibys,https://maps.app.goo.gl/iMf9ku3Wzxpp8x4GA
+K253,KIELSA SPS PLAZA UNIVERSAL,15.5318202,-88.0190142,15.5318202,-88.0190142,0.0,verificada,Diunsa • Plaza Universal,https://maps.app.goo.gl/utBVptsFveNu9Fjw7
+K264,KIELSA SPS MEGA PLAZA PALENQUE,15.5393573,-88.0176836,15.5393573,-88.0176836,0.0,verificada,Farmacia Kielsa • Megaplaza Palenque,https://maps.app.goo.gl/jC57Lv6vNgD6ypxKA
+K283,KIELSA SPS PLAZA BULEVARES,15.4670359,-87.9824785,15.4670359,-87.9824785,0.0,verificada,Plaza Bulevares,https://maps.app.goo.gl/DbkfmGPngGVxGRs39
+K301,KIELSA SPS PLAZA TOWN CENTER,15.5011428,-87.9988282,15.5011428,-87.9988282,0.0,verificada,Town Center,https://maps.app.goo.gl/8LsuwxJ5HeQPYZqv6
+K001,K001 KIELSA SPS CONDOMINIOS DEL VALLE,15.536538,-88.015442,,,,coordenada_oficial_kielsa,,https://www.google.com/maps/search/?api=1&query=15.536538%2C-88.015442
+K591,K591 KIELSA SPS ONCOLOGICOS,15.51166389,-88.03683333,,,,coordenada_oficial_kielsa,,https://www.google.com/maps/search/?api=1&query=15.51166389%2C-88.03683333
