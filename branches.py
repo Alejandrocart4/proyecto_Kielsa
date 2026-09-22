@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
+from copy import deepcopy
 from urllib.parse import quote
 
 
@@ -121,3 +122,39 @@ def build_real_route_blocks() -> list[dict]:
             }
         )
     return route_blocks
+
+
+def prepare_route_from_candidate(block: dict, candidate: dict) -> dict:
+    """Inserta una sede en un ciclo de sucursales como salida y regreso.
+
+    Se sustituye una arista del ciclo por dos aristas que pasan por la sede.
+    Así la sede aparece solo como inicio y final, y cada sucursal se visita una vez.
+    """
+    required = {"id", "name", "lat", "lng"}
+    if not required.issubset(candidate):
+        raise ValueError("La sede seleccionada no tiene coordenadas completas.")
+    result = deepcopy(block)
+    if any(node["id"] == candidate["id"] for node in result["nodes"]):
+        return result
+    nodes_by_id = {node["id"]: node for node in result["nodes"]}
+    candidate_node = {"id": candidate["id"], "name": candidate["name"], "lat": float(candidate["lat"]), "lng": float(candidate["lng"])}
+    if not result["edges"]:
+        raise ValueError("El bloque no tiene conexiones para formar un circuito.")
+
+    def detour(edge: dict) -> float:
+        origin, destination = nodes_by_id[edge["from"]], nodes_by_id[edge["to"]]
+        return _distance_km(candidate_node, origin) + _distance_km(candidate_node, destination) - float(edge["weight"])
+
+    replaced = min(result["edges"], key=detour)
+    result["edges"].remove(replaced)
+    origin, destination = nodes_by_id[replaced["from"]], nodes_by_id[replaced["to"]]
+    result["nodes"].append(candidate_node)
+    result["edges"].extend(
+        [
+            {"from": candidate_node["id"], "to": origin["id"], "weight": round(_distance_km(candidate_node, origin), 2)},
+            {"from": candidate_node["id"], "to": destination["id"], "weight": round(_distance_km(candidate_node, destination), 2)},
+        ]
+    )
+    result["name"] = f"{block['name']} desde {candidate['name']}"
+    result["weight_source"] = "Estimación inicial incluida la sede. Actualiza con Google Maps antes de usar el resultado final."
+    return result

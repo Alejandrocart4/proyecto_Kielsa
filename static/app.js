@@ -1,5 +1,6 @@
-let branches = [], blockInfo = {}, workingBlocks = [];
+let branches = [], blockInfo = {}, baseBlocks = [], workingBlocks = [];
 let selectedZone = "A", activeFilter = "all", selectedId = null;
+let selectedCandidateId = "A";
 let map, Route, infoWindow, dashboardMarkers = [], candidateMarkers = [], routePolylines = [], lastCycle = null;
 
 const $ = (id) => document.getElementById(id);
@@ -88,8 +89,11 @@ function drawCandidateMarkers() {
 }
 
 function selectCandidate(id) {
+  selectedCandidateId = id;
   const candidate = candidates[id];
   document.querySelectorAll(".candidate").forEach((card) => card.classList.toggle("active", card.dataset.candidate === id));
+  if ($("candidate-select")) $("candidate-select").value = id;
+  if (!$("constructor").hidden && baseBlocks.length) refreshCandidateRoutes();
   if (!map) return;
   map.panTo({ lat: candidate.lat, lng: candidate.lng });
   map.setZoom(15);
@@ -135,14 +139,34 @@ async function initialiseMap() {
   } catch (error) { $("map").textContent = `${error.message} Verifica Maps JavaScript API y Routes API.`; }
 }
 
-function saveWorkingBlocks() { localStorage.setItem("kielsa-real-blocks-v1", JSON.stringify(workingBlocks)); }
+function saveWorkingBlocks() { localStorage.setItem("kielsa-real-blocks-v2", JSON.stringify(workingBlocks)); }
+function candidatePayload(id = selectedCandidateId) { const candidate = candidates[id]; return { id: `SEDE_${id}`, name: `Sede: ${candidate.name}`, lat: candidate.lat, lng: candidate.lng }; }
+async function buildCandidateRoutes(id = selectedCandidateId) {
+  return Promise.all(baseBlocks.map(async (block) => {
+    const response = await fetch("/api/prepare-route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ block, candidate: candidatePayload(id) }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo preparar el circuito desde la sede.");
+    return data.block;
+  }));
+}
+async function refreshCandidateRoutes() {
+  try {
+    routePolylines.forEach((line) => line.setMap(null)); routePolylines = []; lastCycle = null;
+    const previousId = selectedId;
+    workingBlocks = await buildCandidateRoutes();
+    selectedId = workingBlocks.some((block) => block.id === previousId) ? previousId : workingBlocks[0].id;
+    saveWorkingBlocks(); renderConstructor(); await analyze();
+  } catch (error) { $("status").textContent = error.message; }
+}
 function option(items, selected) { return items.map((item) => `<option value="${item.id}" ${item.id === selected ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join(""); }
 function workNames() { return new Map(currentWork().nodes.map((item) => [item.id, item.name])); }
 
 function renderConstructor() {
   const block = currentWork(); if (!block) return;
   $("block").innerHTML = option(workingBlocks, selectedId);
-  const start = block.nodes.some((node) => node.id === $("start").value) ? $("start").value : block.nodes[0]?.id;
+  $("candidate-select").value = selectedCandidateId;
+  const depotId = `SEDE_${selectedCandidateId}`;
+  const start = block.nodes.some((node) => node.id === depotId) ? depotId : block.nodes[0]?.id;
   $("start").innerHTML = option(block.nodes, start);
   $("from").innerHTML = option(block.nodes, block.nodes[0]?.id);
   $("to").innerHTML = option(block.nodes, block.nodes[1]?.id);
@@ -212,9 +236,10 @@ function bindEvents() {
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
+  $("candidate-select").addEventListener("change", (event) => selectCandidate(event.target.value));
   $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); analyze(); });
   $("analyze").addEventListener("click", analyze); $("roads").addEventListener("click", drawRoads);
-  $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/route-blocks")).json(); workingBlocks = data.blocks; selectedId = workingBlocks[0].id; saveWorkingBlocks(); renderConstructor(); analyze(); });
+  $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/route-blocks")).json(); baseBlocks = data.blocks; selectedId = baseBlocks[0].id; await refreshCandidateRoutes(); });
   $("node-form").addEventListener("submit", (event) => { event.preventDefault(); const name = $("node-name").value.trim(); if (!name) return; currentWork().nodes.push({ id: `N${Date.now()}`, name, lat: +$("node-lat").value || null, lng: +$("node-lng").value || null }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("edge-form").addEventListener("submit", (event) => { event.preventDefault(); const from = $("from").value, to = $("to").value, weight = +$("weight").value; if (from !== to && weight > 0 && !currentWork().edges.some((edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from))) currentWork().edges.push({ from, to, weight }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("nodes").addEventListener("click", (event) => { const id = event.target.dataset.node; if (!id) return; currentWork().nodes = currentWork().nodes.filter((node) => node.id !== id); currentWork().edges = currentWork().edges.filter((edge) => edge.from !== id && edge.to !== id); saveWorkingBlocks(); renderConstructor(); analyze(); });
@@ -224,6 +249,8 @@ function bindEvents() {
 (async () => {
   const [branchData, workData] = await Promise.all([fetch("/api/branches").then((response) => response.json()), fetch("/api/route-blocks").then((response) => response.json())]);
   branches = branchData.branches; blockInfo = branchData.block_info;
-  const stored = localStorage.getItem("kielsa-real-blocks-v1"); workingBlocks = stored ? JSON.parse(stored) : workData.blocks; selectedId = workingBlocks[0].id;
+  baseBlocks = workData.blocks;
+  workingBlocks = await buildCandidateRoutes();
+  selectedId = workingBlocks[0].id;
   renderCounters(); renderBranchList(); renderSelectedBlock(); renderConstructor(); bindEvents(); analyze(); initialiseMap();
 })();

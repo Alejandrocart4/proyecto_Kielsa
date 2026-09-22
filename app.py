@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 
 from blocks import avance_1_blocks
-from branches import BLOCKS, build_real_route_blocks, load_active_branches
+from branches import BLOCKS, build_real_route_blocks, load_active_branches, prepare_route_from_candidate
 from hamiltonian import analyze_block
 
 
@@ -52,6 +52,18 @@ def branches():
 @app.get("/api/route-blocks")
 def route_blocks():
     return jsonify(blocks=build_real_route_blocks())
+
+
+@app.post("/api/prepare-route")
+def prepare_route():
+    payload = request.get_json(silent=True) or {}
+    block, candidate = payload.get("block"), payload.get("candidate")
+    if not isinstance(block, dict) or not isinstance(candidate, dict):
+        return jsonify(error="Se requiere un bloque y una sede candidata."), 400
+    try:
+        return jsonify(block=prepare_route_from_candidate(block, candidate))
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
 
 
 @app.post("/api/analyze")

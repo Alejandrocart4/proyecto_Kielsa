@@ -1,6 +1,6 @@
 import unittest
 
-from branches import build_real_route_blocks
+from branches import build_real_route_blocks, prepare_route_from_candidate
 from hamiltonian import analyze_block
 
 
@@ -32,6 +32,15 @@ class HamiltonianTests(unittest.TestCase):
             self.assertEqual(len(result["cycle"]["path"]), len(block["nodes"]) + 1)
             self.assertEqual(result["cycle"]["path"][0], selected_start)
             self.assertEqual(result["cycle"]["path"][-1], selected_start)
+
+    def test_candidate_is_first_and_last_node_of_prepared_route(self):
+        block = build_real_route_blocks()[0]
+        candidate = {"id": "SEDE_A", "name": "Galería Guamilito", "lat": 15.5125222, "lng": -88.02658734}
+        route = prepare_route_from_candidate(block, candidate)
+        result = analyze_block(route, "SEDE_A")
+        self.assertEqual(len(route["nodes"]), 20)
+        self.assertEqual(result["cycle"]["path"][0], "SEDE_A")
+        self.assertEqual(result["cycle"]["path"][-1], "SEDE_A")
 
 
 if __name__ == "__main__":

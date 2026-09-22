@@ -20,3 +20,9 @@
 
 .map-wrap:fullscreen #map { height: 100vh; }
 .map-wrap:fullscreen .fullscreen-map { top: 18px; right: 18px; }
+
+.controls { grid-template-columns: 1.25fr 1.25fr 1fr auto auto; }
+
+@media (max-width: 850px) {
+  .controls { grid-template-columns: 1fr; }
+}
