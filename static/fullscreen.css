@@ -1,0 +1,22 @@
+.fullscreen-map {
+  position: absolute;
+  z-index: 3;
+  top: 16px;
+  right: 16px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #fff;
+  color: #174f87;
+  box-shadow: 0 2px 8px #57799b42;
+}
+
+.fullscreen-map:hover { background: #eef6ff; }
+
+.map-wrap:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: #dbeaf4;
+}
+
+.map-wrap:fullscreen #map { height: 100vh; }
+.map-wrap:fullscreen .fullscreen-map { top: 18px; right: 18px; }

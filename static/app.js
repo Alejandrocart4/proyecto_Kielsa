@@ -184,6 +184,16 @@ async function drawRoads() {
 }
 
 function bindEvents() {
+  $("fullscreen-map").addEventListener("click", async () => {
+    const mapShell = document.querySelector(".map-wrap");
+    if (document.fullscreenElement === mapShell) await document.exitFullscreen();
+    else await mapShell.requestFullscreen();
+  });
+  document.addEventListener("fullscreenchange", () => {
+    const expanded = document.fullscreenElement === document.querySelector(".map-wrap");
+    $("fullscreen-map").textContent = expanded ? "× Cerrar pantalla completa" : "⛶ Pantalla completa";
+    if (map && window.google) { google.maps.event.trigger(map, "resize"); fitToBranches(activeFilter === "all" ? branches : blockBranches(activeFilter)); }
+  });
   $("search").addEventListener("input", renderBranchList);
   $("filters").addEventListener("click", (event) => {
     const button = event.target.closest("button"); if (!button) return;

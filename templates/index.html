@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Optimizador de rutas Kielsa SPS</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='fullscreen.css') }}">
 </head>
 <body>
   <header class="topbar">
@@ -33,6 +34,7 @@
 
     <section class="map-wrap card">
       <div class="map-heading"><div><h2>Farmacias Kielsa SPS</h2><p>Distribución por bloques geográficos</p></div><span id="map-label">Bloques A, B y C</span></div>
+      <button class="fullscreen-map" id="fullscreen-map" title="Ver mapa en pantalla completa">⛶ Pantalla completa</button>
       <div id="map"></div>
       <div class="legend">
         <p><i class="dot a"></i> Bloque A <small>Oeste / Noroeste</small></p>
