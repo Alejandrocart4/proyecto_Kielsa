@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 
 from blocks import avance_1_blocks
-from branches import BLOCKS, load_active_branches
+from branches import BLOCKS, build_real_route_blocks, load_active_branches
 from hamiltonian import analyze_block
 
 
@@ -47,6 +47,11 @@ def blocks():
 @app.get("/api/branches")
 def branches():
     return jsonify(branches=load_active_branches(), block_info=BLOCKS)
+
+
+@app.get("/api/route-blocks")
+def route_blocks():
+    return jsonify(blocks=build_real_route_blocks())
 
 
 @app.post("/api/analyze")

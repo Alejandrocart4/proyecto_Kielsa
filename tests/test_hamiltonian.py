@@ -1,5 +1,6 @@
 import unittest
 
+from branches import build_real_route_blocks
 from hamiltonian import analyze_block
 
 
@@ -19,6 +20,15 @@ class HamiltonianTests(unittest.TestCase):
         self.assertEqual(result["cycle"]["total_weight"], 10)
         self.assertTrue(result["criteria"]["dirac"])
         self.assertTrue(result["criteria"]["ore"])
+
+    def test_real_blocks_have_all_branches_and_a_starting_cycle(self):
+        blocks = build_real_route_blocks()
+        self.assertEqual([len(block["nodes"]) for block in blocks], [19, 19, 14])
+        self.assertEqual(sum(len(block["nodes"]) for block in blocks), 52)
+        for block in blocks:
+            result = analyze_block(block, block["nodes"][0]["id"])
+            self.assertIsNotNone(result["cycle"])
+            self.assertEqual(len(result["cycle"]["path"]), len(block["nodes"]) + 1)
 
 
 if __name__ == "__main__":

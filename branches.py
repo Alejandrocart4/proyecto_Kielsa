@@ -9,6 +9,7 @@ excluyeron por decisión del equipo.
 from __future__ import annotations
 
 import csv
+from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 from urllib.parse import quote
 
@@ -68,3 +69,55 @@ def load_active_branches() -> list[dict]:
             }
         )
     return branches
+
+
+def _distance_km(first: dict, second: dict) -> float:
+    """Calcula una distancia geográfica solo para proponer vecinos iniciales."""
+    latitude_1, longitude_1 = radians(first["lat"]), radians(first["lng"])
+    latitude_2, longitude_2 = radians(second["lat"]), radians(second["lng"])
+    value = sin((latitude_2 - latitude_1) / 2) ** 2 + cos(latitude_1) * cos(latitude_2) * sin((longitude_2 - longitude_1) / 2) ** 2
+    return 6371 * 2 * asin(sqrt(value))
+
+
+def _nearest_cycle(nodes: list[dict]) -> list[dict]:
+    """Ordena nodos por vecinos cercanos para crear un ciclo editable de partida."""
+    pending = nodes.copy()
+    current = min(pending, key=lambda node: (node["lat"], node["lng"]))
+    ordered = [current]
+    pending.remove(current)
+    while pending:
+        following = min(pending, key=lambda node: _distance_km(current, node))
+        ordered.append(following)
+        pending.remove(following)
+        current = following
+    return ordered
+
+
+def build_real_route_blocks() -> list[dict]:
+    """Crea los subgrafos A, B y C con todas las sucursales y dos vecinos por nodo.
+
+    Los pesos iniciales son distancias geográficas para que Python pueda comprobar
+    el ciclo. La interfaz los sustituye con distancias reales de Google Maps antes
+    de presentar el recorrido final.
+    """
+    branches = load_active_branches()
+    route_blocks = []
+    for identifier, info in BLOCKS.items():
+        assigned = [branch for branch in branches if branch["block"] == identifier and branch["lat"] is not None]
+        ordered = _nearest_cycle(assigned)
+        nodes = [{"id": branch["id"], "name": branch["name"], "lat": branch["lat"], "lng": branch["lng"]} for branch in ordered]
+        edges = []
+        for index, origin in enumerate(ordered):
+            destination = ordered[(index + 1) % len(ordered)]
+            edges.append({"from": origin["id"], "to": destination["id"], "weight": round(_distance_km(origin, destination), 2)})
+        route_blocks.append(
+            {
+                "id": identifier,
+                "name": f"Bloque {identifier} ({len(nodes)} sucursales)",
+                "criterion": f"{info['zone']}. Conexión inicial de cada sucursal con dos vecinos cercanos.",
+                "weight_source": "Estimación geográfica inicial. Actualiza con Google Maps antes de usar el resultado final.",
+                "nodes": nodes,
+                "edges": edges,
+            }
+        )
+    return route_blocks

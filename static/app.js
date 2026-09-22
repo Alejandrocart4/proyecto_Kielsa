@@ -135,7 +135,7 @@ async function initialiseMap() {
   } catch (error) { $("map").textContent = `${error.message} Verifica Maps JavaScript API y Routes API.`; }
 }
 
-function saveWorkingBlocks() { localStorage.setItem("kielsa-python-blocks", JSON.stringify(workingBlocks)); }
+function saveWorkingBlocks() { localStorage.setItem("kielsa-real-blocks-v1", JSON.stringify(workingBlocks)); }
 function option(items, selected) { return items.map((item) => `<option value="${item.id}" ${item.id === selected ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join(""); }
 function workNames() { return new Map(currentWork().nodes.map((item) => [item.id, item.name])); }
 
@@ -157,7 +157,7 @@ async function analyze() {
   if (!response.ok) { $("result").textContent = data.error; return; }
   lastCycle = data.cycle; const criteria = data.criteria, labels = workNames();
   const cycle = data.cycle ? data.cycle.path.map((id) => escapeHtml(labels.get(id))).join(" → ") : "No hay circuito con las aristas actuales.";
-  $("result").innerHTML = `<p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
+  $("result").innerHTML = `<p><b>Pesos:</b> ${escapeHtml(currentWork().weight_source || "Configurados manualmente.")}</p><p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
   if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; }
 }
 
@@ -180,6 +180,7 @@ async function drawRoads() {
       routePolylines.push(new google.maps.Polyline({ map, path: [{ lat: +from.lat, lng: +from.lng }, { lat: +to.lat, lng: +to.lng }], strokeColor: "#7d3ee6", strokeWeight: 5 }));
       updateEdgeWeight(fromId, toId, route.distanceMeters / 1000);
     }
+    currentWork().weight_source = "Kilómetros por carretera consultados con Google Maps Routes API.";
     saveWorkingBlocks(); renderConstructor(); await analyze(); $("status").textContent = "Líneas rectas dibujadas y pesos actualizados con kilómetros reales.";
   } catch (error) { $("status").textContent = error.message; }
 }
@@ -212,7 +213,7 @@ function bindEvents() {
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
   $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); analyze(); });
   $("analyze").addEventListener("click", analyze); $("roads").addEventListener("click", drawRoads);
-  $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/blocks")).json(); workingBlocks = data.blocks; selectedId = workingBlocks[0].id; saveWorkingBlocks(); renderConstructor(); analyze(); });
+  $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/route-blocks")).json(); workingBlocks = data.blocks; selectedId = workingBlocks[0].id; saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("node-form").addEventListener("submit", (event) => { event.preventDefault(); const name = $("node-name").value.trim(); if (!name) return; currentWork().nodes.push({ id: `N${Date.now()}`, name, lat: +$("node-lat").value || null, lng: +$("node-lng").value || null }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("edge-form").addEventListener("submit", (event) => { event.preventDefault(); const from = $("from").value, to = $("to").value, weight = +$("weight").value; if (from !== to && weight > 0 && !currentWork().edges.some((edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from))) currentWork().edges.push({ from, to, weight }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("nodes").addEventListener("click", (event) => { const id = event.target.dataset.node; if (!id) return; currentWork().nodes = currentWork().nodes.filter((node) => node.id !== id); currentWork().edges = currentWork().edges.filter((edge) => edge.from !== id && edge.to !== id); saveWorkingBlocks(); renderConstructor(); analyze(); });
@@ -220,8 +221,8 @@ function bindEvents() {
 }
 
 (async () => {
-  const [branchData, workData] = await Promise.all([fetch("/api/branches").then((response) => response.json()), fetch("/api/blocks").then((response) => response.json())]);
+  const [branchData, workData] = await Promise.all([fetch("/api/branches").then((response) => response.json()), fetch("/api/route-blocks").then((response) => response.json())]);
   branches = branchData.branches; blockInfo = branchData.block_info;
-  const stored = localStorage.getItem("kielsa-python-blocks"); workingBlocks = stored ? JSON.parse(stored) : workData.blocks; selectedId = workingBlocks[0].id;
+  const stored = localStorage.getItem("kielsa-real-blocks-v1"); workingBlocks = stored ? JSON.parse(stored) : workData.blocks; selectedId = workingBlocks[0].id;
   renderCounters(); renderBranchList(); renderSelectedBlock(); renderConstructor(); bindEvents(); analyze(); initialiseMap();
 })();

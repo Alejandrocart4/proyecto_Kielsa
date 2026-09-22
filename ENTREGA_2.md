@@ -1,29 +1,33 @@
-# Entrega 2 — Circuitos Hamiltonianos
+# Entrega 2 - Circuitos Hamiltonianos
 
 ## Requisito del PDF
 
 Seleccionar subdivisiones, justificar los criterios, verificar condiciones hamiltonianas y programar un algoritmo de búsqueda. El check-in de construir circuitos para una sede es opcional y no forma parte de esta etapa.
 
-## Evidencia reutilizada del Avance 1
+## Bloques actuales
 
-Se usan tres bloques provisionales de cuatro nodos: norte, centro y sur. Sus aristas y pesos proceden de `datos/distancias_google_maps_2026-09-18.csv`, donde se registraron rutas viales de Google Maps.
+La aplicación usa las 52 sucursales activas y la división geográfica entregada por el equipo:
 
-## Criterio de subdivisión
+| Bloque | Zona | Sucursales |
+| --- | --- | ---: |
+| A | Oeste / Noroeste | 19 |
+| B | Centro / Norte | 19 |
+| C | Sur / Este | 14 |
 
-Cada bloque agrupa sucursales cercanas geográficamente y con conexiones viales cortas registradas. Cuatro nodos por bloque permiten documentar y verificar cada circuito con claridad. Es una subdivisión de trabajo del Avance 1; no afirma cubrir las 55 sucursales del inventario completo.
+Cada bloque inicia con un ciclo editable que conecta a cada sucursal con dos vecinos cercanos. Esta conexión inicial permite que el algoritmo de Python compruebe un circuito de partida. No se presenta como distancia final de carretera.
+
+## Pesos reales de carretera
+
+Al pulsar **Actualizar pesos reales con Google Maps**, la aplicación consulta Google Maps Routes para cada arista del circuito y sustituye el valor inicial por kilómetros de carretera. El dibujo se conserva en línea recta para que sea legible cuando una farmacia está dentro de un centro comercial, pero el peso usado por Python corresponde a la distancia real de Google Maps.
 
 ## Verificación
 
-La aplicación revisa conexión, grado mínimo 2, Dirac y Ore. Dirac y Ore son suficientes: si no se cumplen, se ejecuta de todos modos la búsqueda por retroceso.
-
-## Pesos viales actualizables
-
-El mapa consulta Google Maps Routes para dibujar los tramos por carretera del circuito encontrado. Cuando el usuario usa esa opción, la distancia retornada en kilómetros reemplaza el peso de cada arista consultada. Así el algoritmo vuelve a trabajar con pesos viales y no con estimaciones en línea recta.
+La aplicación revisa conexión, grado mínimo 2, Dirac y Ore. Dirac y Ore son condiciones suficientes. Si no se cumplen, Python ejecuta de todos modos la búsqueda por retroceso para comprobar el circuito existente en el grafo.
 
 ## Implementación en Python
 
-`app.py` contiene el servidor Flask y la API local. `hamiltonian.py` contiene la construcción del grafo, la conectividad, los criterios de Dirac y Ore y la búsqueda por retroceso. El navegador solo usa JavaScript para representar el mapa y solicitar los caminos a Google Maps.
+`branches.py` construye los bloques reales y sus conexiones iniciales. `app.py` expone la API Flask. `hamiltonian.py` construye el grafo, verifica conectividad y criterios, y busca el circuito mediante retroceso. El navegador solo representa el mapa y solicita los kilómetros a Google Maps.
 
 ## Uso
 
-Ejecutar `python app.py` dentro de `proyecto_Kielsa` y abrir `http://127.0.0.1:5000`. Se pueden cambiar nodos, conexiones y pesos desde la interfaz; al hacerlo, Python vuelve a calcular el resultado sobre el grafo actual, sin circuitos fijos.
+Ejecutar `iniciar.bat`, abrir `http://127.0.0.1:5000` y pulsar **Abrir constructor de circuitos**. Seleccionar A, B o C, revisar el circuito y actualizar sus pesos con Google Maps antes de usar la distancia total como resultado final.

@@ -66,12 +66,12 @@
 
   <section class="constructor-shell" id="constructor" hidden>
     <div class="constructor-head"><div><p>Configuración técnica</p><h2>Constructor editable de circuitos</h2><span>Python verifica el circuito. Google Maps dibuja y actualiza los pesos viales.</span></div><button id="close-constructor">Cerrar ×</button></div>
-    <div class="controls"><label>Subgrafo de trabajo <select id="block"></select></label><label>Nodo inicial <select id="start"></select></label><button id="analyze">Buscar circuito</button><button class="secondary" id="reset">Restaurar Avance 1</button></div>
+    <div class="controls"><label>Bloque real <select id="block"></select></label><label>Nodo inicial <select id="start"></select></label><button id="analyze">Buscar circuito</button><button class="secondary" id="reset">Restaurar bloques reales</button></div>
     <div class="editor-grid">
       <article class="editor-card"><h3>Nodos</h3><form id="node-form"><input id="node-name" placeholder="Nombre de farmacia" required><input id="node-lat" type="number" step="any" placeholder="Latitud"><input id="node-lng" type="number" step="any" placeholder="Longitud"><button>Agregar</button></form><ul id="nodes"></ul></article>
       <article class="editor-card"><h3>Aristas y pesos</h3><form id="edge-form"><select id="from"></select><select id="to"></select><input id="weight" type="number" step="0.01" min="0.01" placeholder="km" required><button>Agregar</button></form><div id="edges"></div></article>
     </div>
-    <div class="result-row"><div id="result"></div><button class="green" id="roads">Dibujar caminos reales</button><p id="status"></p></div>
+    <div class="result-row"><div id="result"></div><button class="green" id="roads">Actualizar pesos reales con Google Maps</button><p id="status"></p></div>
   </section>
 
   <footer>Fuente de sucursales: listado oficial de Kielsa SPS · Pesos viales: Google Maps Routes API</footer>
