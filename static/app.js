@@ -60,7 +60,8 @@ function drawDashboardMarkers() {
   if (!map) return;
   clearDashboardMarkers();
   branches.filter((branch) => (activeFilter === "all" || branch.block === activeFilter) && valid(branch)).forEach((branch) => {
-    const marker = new google.maps.Marker({ map, position: { lat: Number(branch.lat), lng: Number(branch.lng) }, title: `${branch.id} · ${branch.name}`, icon: markerIcon(branch.block, branch.block === selectedZone), zIndex: branch.block === selectedZone ? 3 : 1 });
+    const highlighted = activeFilter !== "all" && branch.block === selectedZone;
+    const marker = new google.maps.Marker({ map, position: { lat: Number(branch.lat), lng: Number(branch.lng) }, title: `${branch.id} · ${branch.name}`, icon: markerIcon(branch.block, highlighted), zIndex: highlighted ? 3 : 1 });
     marker.addListener("click", () => {
       infoWindow.setContent(`<b>${escapeHtml(branch.id)} · ${escapeHtml(branch.name)}</b><br><span>${escapeHtml(branch.address)}</span><br><a target="_blank" rel="noreferrer" href="${branch.map_url}">Abrir en Google Maps</a>`);
       infoWindow.open({ map, anchor: marker });
