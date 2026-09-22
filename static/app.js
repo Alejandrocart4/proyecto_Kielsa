@@ -180,12 +180,13 @@ async function analyze() {
   clearRouteLines(); lastCycle = null;
   const response = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ block: currentWork(), start_id: $("start").value }) });
   const data = await response.json();
-  if (!response.ok) { $("result").textContent = data.error; return; }
+  if (!response.ok) { $("result").textContent = data.error; $("circuit-message").textContent = "No se pudo calcular el circuito."; $("route-distance").textContent = "Distancia pendiente de rutas"; return; }
   lastCycle = data.cycle; const criteria = data.criteria, labels = workNames();
   const cycle = data.cycle ? data.cycle.path.map((id) => escapeHtml(labels.get(id))).join(" → ") : "No hay circuito con las aristas actuales.";
   const returnPoint = data.cycle ? escapeHtml(labels.get(data.cycle.path[0])) : "—";
   $("result").innerHTML = `<p><b>Pesos:</b> ${escapeHtml(currentWork().weight_source || "Configurados manualmente.")}</p><p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Inicio y retorno:</b> ${returnPoint}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
   if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; drawCircuitEdges(); }
+  else { $("circuit-message").textContent = "No se encontró un circuito con las aristas actuales."; $("route-distance").textContent = "Distancia pendiente de rutas"; }
 }
 
 function updateEdgeWeight(from, to, km) {
@@ -194,6 +195,13 @@ function updateEdgeWeight(from, to, km) {
 }
 
 function clearRouteLines() { routePolylines.forEach((line) => line.setMap(null)); routePolylines = []; }
+function clearCircuitDisplay() {
+  clearRouteLines(); lastCycle = null;
+  if (infoWindow) infoWindow.close();
+  $("circuit-message").textContent = "Selecciona el bloque y busca un nuevo circuito.";
+  $("route-distance").textContent = "Distancia pendiente de rutas";
+  $("result").innerHTML = "";
+}
 function routeWeight(from, to) { return currentWork().edges.find((edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from))?.weight; }
 function addRouteLine(from, to, km) {
   const line = new google.maps.Polyline({ map, path: [{ lat: +from.lat, lng: +from.lng }, { lat: +to.lat, lng: +to.lng }], strokeColor: "#7d3ee6", strokeOpacity: .9, strokeWeight: 5, zIndex: 6 });
@@ -246,6 +254,7 @@ function bindEvents() {
   $("search").addEventListener("input", renderBranchList);
   $("filters").addEventListener("click", (event) => {
     const button = event.target.closest("button"); if (!button) return;
+    clearCircuitDisplay();
     activeFilter = button.dataset.filter;
     [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button));
     if (activeFilter !== "all") { selectedZone = activeFilter; renderSelectedBlock(); }
@@ -259,7 +268,7 @@ function bindEvents() {
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
   $("candidate-select").addEventListener("change", (event) => selectCandidate(event.target.value));
-  $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); analyze(); });
+  $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); clearCircuitDisplay(); });
   $("analyze").addEventListener("click", analyze); $("roads").addEventListener("click", drawRoads);
   $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/route-blocks")).json(); baseBlocks = data.blocks; selectedId = baseBlocks[0].id; await refreshCandidateRoutes(); });
   $("node-form").addEventListener("submit", (event) => { event.preventDefault(); const name = $("node-name").value.trim(); if (!name) return; currentWork().nodes.push({ id: `N${Date.now()}`, name, lat: +$("node-lat").value || null, lng: +$("node-lng").value || null }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
