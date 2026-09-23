@@ -23,8 +23,8 @@ class HamiltonianTests(unittest.TestCase):
 
     def test_real_blocks_have_all_branches_and_a_starting_cycle(self):
         blocks = build_real_route_blocks()
-        self.assertEqual([len(block["nodes"]) for block in blocks], [17, 20, 14])
-        self.assertEqual(sum(len(block["nodes"]) for block in blocks), 51)
+        self.assertEqual([len(block["nodes"]) for block in blocks], [17, 19, 14])
+        self.assertEqual(sum(len(block["nodes"]) for block in blocks), 50)
         for block in blocks:
             selected_start = block["nodes"][-1]["id"]
             result = analyze_block(block, selected_start)
