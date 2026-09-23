@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "datos"
 EXCEL = DATA / "Datos Precisos-kielsa.xlsx"
 BRANCHES = DATA / "sucursales_sin_K604_K094_K303.csv"
+MANUAL_ADJUSTMENTS = DATA / "ajustes_ubicacion_manual.csv"
 REPORT = DATA / "auditoria_ubicaciones_google_maps.csv"
 NAMESPACE = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 
@@ -92,19 +93,29 @@ def main() -> None:
     update = parser.parse_args().actualizar
 
     excel = excel_rows()
+    with MANUAL_ADJUSTMENTS.open(encoding="utf-8-sig", newline="") as file:
+        manual = {row["id"]: row for row in csv.DictReader(file)}
     with BRANCHES.open(encoding="utf-8-sig", newline="") as file:
         branches = list(csv.DictReader(file))
         fields = file.seek(0) or csv.DictReader(file).fieldnames
     report = []
     changed = 0
     for branch in branches:
+        adjustment = manual.get(branch["id"])
         source = excel.get(branch["id"])
         item = {
             "id": branch["id"], "nombre": branch["nombre"], "app_latitud": branch["latitud"],
             "app_longitud": branch["longitud"], "google_latitud": "", "google_longitud": "",
             "diferencia_km": "", "estado": "sin_enlace_excel", "titulo_google": "", "url_maps": "",
         }
-        if source:
+        if adjustment:
+            latitude, longitude = float(adjustment["latitud"]), float(adjustment["longitud"])
+            item.update({"google_latitud": latitude, "google_longitud": longitude, "diferencia_km": 0, "estado": "ajuste_manual_equipo", "titulo_google": adjustment["fuente"]})
+            if update:
+                branch["latitud"] = f"{latitude:.7f}"
+                branch["longitud"] = f"{longitude:.7f}"
+                changed += 1
+        elif source:
             item["url_maps"] = source.get("url_maps", "")
             try:
                 latitude, longitude, title = google_coordinates(item["url_maps"])
@@ -130,7 +141,8 @@ def main() -> None:
             writer.writerows(branches)
 
     verified = sum(item["estado"] == "verificada" for item in report)
-    print(f"Verificadas en Google Maps: {verified}/{len(branches)}. Coordenadas actualizadas: {changed}. Reporte: {REPORT}")
+    manual_count = sum(item["estado"] == "ajuste_manual_equipo" for item in report)
+    print(f"Verificadas en Google Maps: {verified}. Ajustes manuales del equipo: {manual_count}. Total: {len(branches)}. Coordenadas actualizadas: {changed}. Reporte: {REPORT}")
 
 
 if __name__ == "__main__":

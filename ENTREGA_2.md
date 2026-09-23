@@ -6,12 +6,12 @@ Seleccionar subdivisiones, justificar los criterios, verificar condiciones hamil
 
 ## Bloques actuales
 
-La aplicación usa las 50 sucursales activas y la división geográfica entregada por el equipo:
+La aplicación usa las 51 sucursales activas y la división geográfica entregada por el equipo:
 
 | Bloque | Zona | Sucursales |
 | --- | --- | ---: |
 | A | Oeste / Noroeste | 17 |
-| B | Centro / Norte | 19 |
+| B | Centro / Norte | 20 |
 | C | Sur / Este | 14 |
 
 Cada bloque inicia con un ciclo editable que conecta a cada sucursal con dos vecinos cercanos. Esta conexión inicial permite que el algoritmo de Python compruebe un circuito de partida. No se presenta como distancia final de carretera.
