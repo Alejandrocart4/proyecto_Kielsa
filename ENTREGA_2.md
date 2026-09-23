@@ -10,8 +10,8 @@ La aplicación usa las 50 sucursales activas y la división geográfica entregad
 
 | Bloque | Zona | Sucursales |
 | --- | --- | ---: |
-| A | Oeste / Noroeste | 18 |
-| B | Centro / Norte | 18 |
+| A | Oeste / Noroeste | 17 |
+| B | Centro / Norte | 19 |
 | C | Sur / Este | 14 |
 
 Cada bloque inicia con un ciclo editable que conecta a cada sucursal con dos vecinos cercanos. Esta conexión inicial permite que el algoritmo de Python compruebe un circuito de partida. No se presenta como distancia final de carretera.
