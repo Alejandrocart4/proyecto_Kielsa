@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='visual.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='candidates.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='venue-images.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='technical-page.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='technical-map-override.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='block-summary.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='technical-mode.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='fullscreen.css') }}">
 </head>
 <body>
@@ -43,7 +48,7 @@
         <button data-mode="hamilton">⌘ Hamiltoniano</button>
       </div>
       <button class="fullscreen-map" id="fullscreen-map" title="Ver mapa en pantalla completa">⛶ Pantalla completa</button>
-      <div id="map"></div>
+      <div id="map-home"><div id="map"></div></div>
       <div class="legend">
         <p><i class="dot a"></i> Bloque A <small>Oeste / Noroeste</small></p>
         <p><i class="dot b"></i> Bloque B <small>Centro / Norte</small></p>
@@ -55,10 +60,9 @@
     <aside class="right-panel">
       <section class="card selected-card" id="selected-card">
         <p class="eyebrow"><i class="dot c"></i> <span id="selected-name">Bloque C seleccionado</span></p>
-        <div class="block-number"><strong id="selected-count">16</strong><span>sucursales<br>en este bloque</span></div>
-        <div class="circuit-state"><span>⌘</span><div><b>Circuito Hamiltoniano</b><p id="circuit-message">Configura las conexiones reales para calcularlo.</p></div></div>
-        <div class="distance"><span>⚠</span><b id="route-distance">Distancia pendiente de rutas</b></div>
-        <button class="outline circuit-button" id="open-constructor">Abrir constructor de circuitos</button>
+        <div class="block-metrics"><p><b id="selected-count">0</b><span>nodos<br>(sucursales)</span></p><p><b id="selected-edges">0</b><span>aristas<br>(conexiones)</span></p><p><b class="metric-ok">✓</b><span id="selected-connected">Conectado<br>Grafo válido</span></p></div>
+        <div class="circuit-summary"><p><span>⌘</span><b>Circuito Hamiltoniano<small id="circuit-message">Listo para calcular</small></b></p><p><span>ᐃ</span><b id="route-distance">Distancia pendiente</b></p></div>
+        <button class="outline circuit-button" id="open-constructor">Ver análisis detallado del bloque ›</button>
       </section>
       <section class="card candidates" id="candidates">
         <div class="section-title"><h2>Sedes candidatas</h2><a href="#constructor">Ver detalles →</a></div>
@@ -72,12 +76,24 @@
     </aside>
   </main>
 
+  <section class="technical-page" id="technical-page" hidden>
+    <button class="back-main" id="back-main">← Volver al mapa principal</button>
+    <div class="technical-title"><p>Configuración técnica</p><h2>Modo técnico – Constructor de circuito Hamiltoniano</h2><span>Seleccione un bloque, una sede candidata y las sucursales del bloque para construir y validar el circuito.</span></div>
+    <div class="technical-bar"><label>Bloque de trabajo<select id="technical-block-select"></select></label><label>Sede candidata<select id="technical-candidate-select"><option value="A">Galería Guamilito</option><option value="B">Plaza Los Caminantes</option><option value="C">Plaza Trejo</option></select></label><p id="technical-restriction">Restricción activa: solo sucursales del bloque.</p><button id="technical-run">▶ Ver circuito Hamiltoniano</button><button id="technical-clear">Limpiar selección</button></div>
+    <div class="technical-layout">
+      <section class="technical-list"><div class="technical-list-head"><h3>Sucursales disponibles del bloque</h3><b id="technical-count">0 seleccionadas</b></div><label class="search"><span>⌕</span><input id="technical-search" placeholder="Buscar sucursal del bloque..."></label><p class="technical-info">Solo se muestran las sucursales que pertenecen al bloque elegido.</p><div id="technical-page-branches" class="technical-page-branches"></div></section>
+      <section class="technical-map-panel"><div class="technical-map-head"><div><h3>Mapa del circuito</h3><p id="technical-map-message">Seleccione sucursales y construya el circuito.</p></div><button id="technical-fullscreen">⛶ Pantalla completa</button></div><div id="technical-map-host"></div><div class="technical-legend">● Sucursales seleccionadas &nbsp; ━ Circuito Hamiltoniano &nbsp; ★ Sede candidata</div></section>
+      <aside class="technical-results"><section><h3>✓ Validación del circuito</h3><p>Bloque seleccionado: <b id="technical-result-block">—</b></p><p>Sede candidata: <b id="technical-result-candidate">—</b></p><p>Sucursales seleccionadas: <b id="technical-result-count">0</b></p></section><section><h3>▥ Resultado del análisis</h3><p>Circuito Hamiltoniano: <b id="technical-result-cycle">Pendiente</b></p><p>Distancia total: <b id="technical-result-distance">—</b></p><p>Nodos visitados: <b id="technical-result-nodes">0</b></p><p>Inicio y regreso: <b id="technical-result-return">—</b></p></section><section><h3>Orden de visita</h3><ol id="technical-order"></ol></section></aside>
+    </div>
+    <p class="technical-footer">El modo técnico prueba escenarios controlados por bloque y valida circuitos hamiltonianos sin mezclar sucursales de otras zonas.</p>
+  </section>
+
   <section class="comparison-shell" id="comparison" hidden>
     <div class="comparison-head"><div><p>Evaluación de sede técnica</p><h2>Comparación de sedes candidatas</h2><span>Selecciona la sucursal representativa de cada bloque para comparar las opciones.</span></div><button id="close-comparison">Cerrar ×</button></div>
     <div class="venue-cards">
-      <article class="venue-card"><div class="venue-image" id="venue-image-A">Imagen de Galería Guamilito</div><div><h3>Galería Guamilito</h3><span>Centro · 8 calle, 7 avenida NO</span><b>L. 7,000/mes</b><p>Agua, luz y baño privado.</p></div></article>
-      <article class="venue-card"><div class="venue-image" id="venue-image-B">Imagen de Plaza Los Caminantes</div><div><h3>Plaza Los Caminantes</h3><span>Norte · GX69+R28, SPS</span><b>L. 11,800/mes</b><p>Agua y seguridad.</p></div></article>
-      <article class="venue-card"><div class="venue-image" id="venue-image-C">Imagen de Plaza Trejo</div><div><h3>Plaza Trejo</h3><span>Oeste · 10 calle, 23 avenida S</span><b>USD 2,868/mes</b><p>Parqueo y seguridad 24/7.</p></div></article>
+      <article class="venue-card"><img class="venue-image" src="{{ url_for('image', filename='Guamilito.jpeg') }}" alt="Edificio de Galería Guamilito"><div><h3>Galería Guamilito</h3><span>Centro · 8 calle, 7 avenida NO</span><b>L. 7,000/mes</b><p>Agua, luz y baño privado.</p></div></article>
+      <article class="venue-card"><img class="venue-image" src="{{ url_for('image', filename='caminantes.jpeg') }}" alt="Edificio de Plaza Los Caminantes"><div><h3>Plaza Los Caminantes</h3><span>Norte · GX69+R28, SPS</span><b>L. 11,800/mes</b><p>Agua y seguridad.</p></div></article>
+      <article class="venue-card"><img class="venue-image" src="{{ url_for('image', filename='Trejo.jpeg') }}" alt="Edificio de Plaza Trejo"><div><h3>Plaza Trejo</h3><span>Oeste · 10 calle, 23 avenida S</span><b>USD 2,868/mes</b><p>Parqueo y seguridad 24/7.</p></div></article>
     </div>
     <div class="comparison-controls" id="representatives"></div>
     <div class="comparison-table-wrap"><table><thead><tr><th>Sede</th><th>Entrada bloque A</th><th>Entrada bloque B</th><th>Entrada bloque C</th><th>Total estimado</th><th>Costo mensual</th><th>Resultado</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
@@ -88,11 +104,11 @@
     <div class="constructor-head"><div><p>Configuración técnica</p><h2>Constructor editable de circuitos</h2><span>Python verifica el circuito. Google Maps dibuja y actualiza los pesos viales.</span></div><button id="close-constructor">Cerrar ×</button></div>
     <div class="controls"><label>Bloque real <select id="block"></select></label><label>Sede de inicio y regreso <select id="candidate-select"><option value="A">Galería Guamilito</option><option value="B">Plaza Los Caminantes</option><option value="C">Plaza Trejo</option></select></label><label>Inicio y final <select id="start" disabled></select></label><button id="analyze">Buscar circuito</button><button class="secondary" id="reset">Restaurar bloques reales</button></div>
     <section class="technical-picker"><div><h3>Selección de sucursales para el subgrafo técnico</h3><p>Marca al menos tres sucursales. El programa crea las conexiones iniciales y busca el circuito desde la sede seleccionada.</p></div><div class="picker-actions"><button id="select-visible" type="button">Seleccionar visibles</button><button id="clear-selected" type="button">Limpiar</button><button id="create-custom" type="button">Crear subgrafo y buscar circuito</button></div><div id="technical-branches" class="technical-branches"></div></section>
-    <div class="editor-grid">
+    <div class="editor-grid" hidden>
       <article class="editor-card"><h3>Nodos</h3><form id="node-form"><input id="node-name" placeholder="Nombre de farmacia" required><input id="node-lat" type="number" step="any" placeholder="Latitud"><input id="node-lng" type="number" step="any" placeholder="Longitud"><button>Agregar</button></form><ul id="nodes"></ul></article>
       <article class="editor-card"><h3>Aristas y pesos</h3><form id="edge-form"><select id="from"></select><select id="to"></select><input id="weight" type="number" step="0.01" min="0.01" placeholder="km" required><button>Agregar</button></form><div id="edges"></div></article>
     </div>
-    <div class="result-row"><div id="result"></div><button class="green" id="roads">Actualizar pesos reales con Google Maps</button><p id="status"></p></div>
+    <div class="result-row" hidden><div id="result"></div><button class="green" id="roads">Actualizar pesos reales con Google Maps</button><p id="status"></p></div>
   </section>
 
   <footer>Fuente de sucursales: listado oficial de Kielsa SPS · Pesos viales: Google Maps Routes API</footer>

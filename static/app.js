@@ -44,8 +44,11 @@ function renderBranchList() {
 function renderSelectedBlock() {
   const data = blockInfo[selectedZone] || { name: `Bloque ${selectedZone}`, zone: "" };
   const total = blockBranches().length;
+  const graph = baseBlocks.find((block) => block.id === selectedZone);
   $("selected-name").textContent = `${data.name} seleccionado`;
   $("selected-count").textContent = total;
+  $("selected-edges").textContent = graph?.edges.length ?? 0;
+  $("selected-connected").innerHTML = "Conectado<br>Grafo válido";
   $("map-label").textContent = `${data.name} · ${data.zone}`;
   const dot = $("selected-card").querySelector(".dot");
   dot.className = `dot ${selectedZone.toLowerCase()}`;
@@ -76,15 +79,13 @@ function clearGraphLines() { graphPolylines.forEach((line) => line.setMap(null))
 function drawCompleteGraph() {
   clearGraphLines();
   if (!map || activeFilter !== "all") return;
-  const nodes = new Map(branches.map((branch) => [branch.id, branch]));
-  baseBlocks.forEach((block) => {
-    const color = colors[block.id] || "#395a78";
-    block.edges.forEach((edge) => {
-      const from = nodes.get(edge.from), to = nodes.get(edge.to);
-      if (!valid(from) || !valid(to)) return;
-      graphPolylines.push(new google.maps.Polyline({ map, path: [{ lat:+from.lat, lng:+from.lng }, { lat:+to.lat, lng:+to.lng }], strokeColor: color, strokeOpacity: .82, strokeWeight: 3, clickable: false, zIndex: 2 }));
-    });
-  });
+  const nodes = branches.filter(valid);
+  for (let first = 0; first < nodes.length; first += 1) {
+    for (let second = first + 1; second < nodes.length; second += 1) {
+      const from = nodes[first], to = nodes[second];
+      graphPolylines.push(new google.maps.Polyline({ map, path: [{ lat:+from.lat, lng:+from.lng }, { lat:+to.lat, lng:+to.lng }], strokeColor: "#395a78", strokeOpacity: .11, strokeWeight: 1, clickable: false, zIndex: 1 }));
+    }
+  }
 }
 function setMapMode(mode) {
   mapMode = mode;
@@ -92,7 +93,7 @@ function setMapMode(mode) {
   clearGraphLines(); clearRouteLines();
   if (mode === "graph") {
     if (activeFilter !== "all") { $("circuit-message").textContent = "El grafo completo se muestra al seleccionar Todas las sucursales."; return; }
-    drawCompleteGraph(); $("circuit-message").textContent = "Grafo completo: se muestran todos los nodos y las conexiones de los bloques A, B y C.";
+    drawCompleteGraph(); $("circuit-message").textContent = "Grafo completo: cada sucursal está conectada visualmente con todas las demás.";
   }
   if (mode === "hamilton") { $("open-constructor").click(); }
 }
@@ -119,6 +120,61 @@ function renderComparisonRows() {
 }
 function renderTechnicalPicker() {
   $("technical-branches").innerHTML = branches.filter((branch) => activeFilter === "all" || branch.block === activeFilter).map((branch) => `<label><input type="checkbox" value="${branch.id}" ${technicalSelection.has(branch.id) ? "checked" : ""}>${escapeHtml(branch.id)} · ${escapeHtml(branch.name)}</label>`).join("");
+}
+function technicalZone() { return $("technical-block-select").value || selectedZone; }
+function technicalCandidates() { return blockBranches(technicalZone()); }
+function renderTechnicalPage() {
+  const zone = technicalZone();
+  $("technical-block-select").innerHTML = baseBlocks.map((block) => `<option value="${block.id}" ${block.id === zone ? "selected" : ""}>${escapeHtml(block.name)}</option>`).join("");
+  $("technical-candidate-select").value = selectedCandidateId;
+  const items = technicalCandidates();
+  $("technical-page-branches").innerHTML = items.map((branch) => `<label><input type="checkbox" value="${branch.id}" ${technicalSelection.has(branch.id) ? "checked" : ""}><span><b>${escapeHtml(branch.id)}</b> ${escapeHtml(branch.name)}</span></label>`).join("");
+  const selected = [...technicalSelection].filter((id) => items.some((branch) => branch.id === id));
+  $("technical-count").textContent = `${selected.length} de ${items.length} seleccionadas`;
+  $("technical-restriction").textContent = `Restricción activa: solo sucursales del Bloque ${zone}`;
+  $("technical-result-block").textContent = (blockInfo[zone] || {}).name || `Bloque ${zone}`;
+  $("technical-result-candidate").textContent = candidates[selectedCandidateId].name;
+  $("technical-result-count").textContent = `${selected.length} de ${items.length}`;
+}
+function renderTechnicalResults(data = null) {
+  if (!data?.cycle) return;
+  const names = new Map(currentWork().nodes.map((node) => [node.id, node.name]));
+  $("technical-result-cycle").textContent = "Encontrado ✓";
+  $("technical-result-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km`;
+  $("technical-result-nodes").textContent = data.cycle.path.length - 1;
+  $("technical-result-return").textContent = candidates[selectedCandidateId].name;
+  $("technical-order").innerHTML = data.cycle.path.slice(0, -1).map((id) => `<li>${escapeHtml(names.get(id))}</li>`).join("");
+  $("technical-map-message").textContent = "Circuito encontrado con las sucursales seleccionadas.";
+}
+function openTechnicalPage() {
+  document.body.classList.add("technical-active");
+  $("technical-page").hidden = false;
+  document.querySelector(".dashboard").hidden = true;
+  $("comparison").hidden = true; $("constructor").hidden = true;
+  $("technical-map-host").appendChild($("map"));
+  selectedZone = technicalZone(); activeFilter = selectedZone; clearGraphLines();
+  renderTechnicalPage(); drawDashboardMarkers(); drawCandidateMarkers();
+  if (map && window.google) { google.maps.event.trigger(map, "resize"); fitToBranches(technicalCandidates()); }
+  window.scrollTo(0, 0);
+}
+function closeTechnicalPage() {
+  $("map-home").appendChild($("map"));
+  $("technical-page").hidden = true; document.querySelector(".dashboard").hidden = false;
+  document.body.classList.remove("technical-active");
+  activeFilter = "all"; clearRouteLines(); drawDashboardMarkers();
+  if (map && window.google) { google.maps.event.trigger(map, "resize"); fitToBranches(branches); }
+  window.scrollTo(0, 0);
+}
+async function runTechnicalCircuit() {
+  const ids = [...technicalSelection].filter((id) => technicalCandidates().some((branch) => branch.id === id));
+  if (ids.length < 3) { $("technical-map-message").textContent = "Selecciona al menos tres sucursales."; return; }
+  const response = await fetch("/api/custom-block", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ branch_ids: ids }) });
+  const data = await response.json();
+  if (!response.ok) { $("technical-map-message").textContent = data.error; return; }
+  const preparedResponse = await fetch("/api/prepare-route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ block: data.block, candidate: candidatePayload() }) });
+  const prepared = await preparedResponse.json();
+  if (!preparedResponse.ok) { $("technical-map-message").textContent = prepared.error; return; }
+  workingBlocks = [prepared.block]; selectedId = prepared.block.id; renderConstructor(); await analyze();
 }
 async function createTechnicalBlock() {
   const ids = [...document.querySelectorAll("#technical-branches input:checked")].map((input) => input.value);
@@ -244,7 +300,7 @@ async function analyze() {
   const cycle = data.cycle ? data.cycle.path.map((id) => escapeHtml(labels.get(id))).join(" → ") : "No hay circuito con las aristas actuales.";
   const returnPoint = data.cycle ? escapeHtml(labels.get(data.cycle.path[0])) : "—";
   $("result").innerHTML = `<p><b>Pesos:</b> ${escapeHtml(currentWork().weight_source || "Configurados manualmente.")}</p><p><b>Conexo:</b> <span class="${criteria.connected ? "ok" : "bad"}">${criteria.connected ? "sí" : "no"}</span> · <b>Grado mínimo 2:</b> ${criteria.minimum_degree ? "sí" : "no"} · <b>Dirac:</b> ${criteria.dirac ? "cumple" : "no cumple"} · <b>Ore:</b> ${criteria.ore ? "cumple" : "no cumple"}</p><p><b>Inicio y retorno:</b> ${returnPoint}</p><p><b>Circuito:</b> ${cycle}</p>${data.cycle ? `<p><b>Distancia total:</b> ${data.cycle.total_weight.toFixed(2)} km</p>` : ""}`;
-  if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; drawCircuitEdges(); }
+  if (data.cycle) { $("circuit-message").textContent = "Hay un circuito en el subgrafo de trabajo."; $("route-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km en el subgrafo trabajado`; drawCircuitEdges(); if (!$("technical-page").hidden) renderTechnicalResults(data); }
   else { $("circuit-message").textContent = "No se encontró un circuito con las aristas actuales."; $("route-distance").textContent = "Distancia pendiente de rutas"; }
 }
 
@@ -271,7 +327,7 @@ function addRouteLine(from, to, km) {
   routePolylines.push(line);
 }
 function drawCircuitEdges() {
-  if (!map || !lastCycle || $("constructor").hidden) return;
+  if (!map || !lastCycle || ($("constructor").hidden && $("technical-page").hidden)) return;
   const nodes = new Map(currentWork().nodes.map((node) => [node.id, node]));
   const legs = lastCycle.path.slice(0, -1).map((from, index) => [from, lastCycle.path[index + 1]]);
   clearRouteLines();
@@ -323,13 +379,21 @@ function bindEvents() {
   });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
   $("load-branches").addEventListener("click", async () => { const data = await (await fetch("/api/branches")).json(); branches = data.branches; blockInfo = data.block_info; renderCounters(); renderBranchList(); renderSelectedBlock(); drawDashboardMarkers(); drawCandidateMarkers(); });
-  $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); drawCircuitEdges(); });
+  $("open-constructor").addEventListener("click", () => { activeFilter = selectedZone; technicalSelection = new Set(blockBranches(selectedZone).map((branch) => branch.id)); openTechnicalPage(); });
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; clearRouteLines(); });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
   $("candidate-button").addEventListener("click", () => { $("comparison").hidden = false; renderComparison(); $("comparison").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("close-comparison").addEventListener("click", () => $("comparison").hidden = true);
   $("representatives").addEventListener("change", renderComparisonRows);
-  $("technical-button").addEventListener("click", () => { $("constructor").hidden = false; renderTechnicalPicker(); $("constructor").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  $("technical-button").addEventListener("click", () => { activeFilter = selectedZone; technicalSelection = new Set(blockBranches(selectedZone).map((branch) => branch.id)); openTechnicalPage(); });
+  $("back-main").addEventListener("click", closeTechnicalPage);
+  $("technical-block-select").addEventListener("change", (event) => { selectedZone = event.target.value; activeFilter = selectedZone; technicalSelection = new Set(technicalCandidates().map((branch) => branch.id)); renderTechnicalPage(); drawDashboardMarkers(); if (map) fitToBranches(technicalCandidates()); });
+  $("technical-candidate-select").addEventListener("change", (event) => { selectedCandidateId = event.target.value; selectCandidate(selectedCandidateId); renderTechnicalPage(); });
+  $("technical-page-branches").addEventListener("change", (event) => { if (event.target.matches("input")) { event.target.checked ? technicalSelection.add(event.target.value) : technicalSelection.delete(event.target.value); renderTechnicalPage(); } });
+  $("technical-clear").addEventListener("click", () => { technicalSelection.clear(); renderTechnicalPage(); });
+  $("technical-run").addEventListener("click", runTechnicalCircuit);
+  $("technical-search").addEventListener("input", (event) => { const text = event.target.value.toLowerCase(); document.querySelectorAll("#technical-page-branches label").forEach((label) => label.hidden = !label.textContent.toLowerCase().includes(text)); });
+  $("technical-fullscreen").addEventListener("click", () => $("technical-map-host").requestFullscreen());
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
   $("candidate-select").addEventListener("change", (event) => selectCandidate(event.target.value));
   $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); clearCircuitDisplay(); });

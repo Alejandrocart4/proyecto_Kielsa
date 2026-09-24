@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from blocks import avance_1_blocks
 from branches import BLOCKS, build_custom_route_block, build_real_route_blocks, load_active_branches, prepare_route_from_candidate
@@ -37,6 +37,12 @@ def index():
     # La clave de navegador es pública por diseño; su seguridad depende de las
     # restricciones HTTP referrer configuradas en Google Cloud.
     return render_template("index.html", maps_key=os.getenv("VITE_GOOGLE_MAPS_BROWSER_KEY", ""))
+
+
+@app.get("/imagenes/<path:filename>")
+def image(filename: str):
+    """Sirve fotografías locales de las sedes candidatas para la comparación."""
+    return send_from_directory(Path(__file__).with_name("imagenes"), filename)
 
 
 @app.get("/api/blocks")
