@@ -48,10 +48,24 @@ function renderSelectedBlock() {
   $("selected-name").textContent = `${data.name} seleccionado`;
   $("selected-count").textContent = total;
   $("selected-edges").textContent = graph?.edges.length ?? 0;
+  $("circuit-summary").hidden = false;
+  $("open-constructor").hidden = false;
   $("selected-connected").innerHTML = "Conectado<br>Grafo válido";
   $("map-label").textContent = `${data.name} · ${data.zone}`;
   const dot = $("selected-card").querySelector(".dot");
   dot.className = `dot ${selectedZone.toLowerCase()}`;
+}
+
+function renderCompleteGraphSummary() {
+  const nodes = branches.filter(valid).length;
+  const edges = nodes * (nodes - 1) / 2;
+  $("selected-name").textContent = "Grafo completo seleccionado";
+  $("selected-count").textContent = nodes;
+  $("selected-edges").textContent = edges.toLocaleString("es-HN");
+  $("selected-connected").innerHTML = "Conectado<br>Grafo completo";
+  $("map-label").textContent = "Grafo completo · 50 sucursales";
+  $("circuit-summary").hidden = true;
+  $("open-constructor").hidden = true;
 }
 
 function markerIcon(zone, focused) {
@@ -95,6 +109,8 @@ function setMapMode(mode) {
     if (activeFilter !== "all") { $("circuit-message").textContent = "El grafo completo se muestra al seleccionar Todas las sucursales."; return; }
     drawCompleteGraph(); $("circuit-message").textContent = "Grafo completo: cada sucursal está conectada visualmente con todas las demás.";
   }
+  if (mode === "graph") renderCompleteGraphSummary();
+  else renderSelectedBlock();
   if (mode === "hamilton") { $("open-constructor").click(); }
 }
 
@@ -143,7 +159,13 @@ function renderTechnicalResults(data = null) {
   $("technical-result-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km`;
   $("technical-result-nodes").textContent = data.cycle.path.length - 1;
   $("technical-result-return").textContent = candidates[selectedCandidateId].name;
-  $("technical-order").innerHTML = data.cycle.path.slice(0, -1).map((id) => `<li>${escapeHtml(names.get(id))}</li>`).join("");
+  const finalIndex = data.cycle.path.length - 1;
+  $("technical-order").innerHTML = data.cycle.path.map((id, index) => {
+    const label = escapeHtml(names.get(id));
+    if (index === 0) return `<li><b>Salida:</b> ${label}</li>`;
+    if (index === finalIndex) return `<li><b>Regreso:</b> ${label}</li>`;
+    return `<li>${label}</li>`;
+  }).join("");
   $("technical-map-message").textContent = "Circuito encontrado con las sucursales seleccionadas.";
 }
 function openTechnicalPage() {
