@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 
 from blocks import avance_1_blocks
-from branches import BLOCKS, build_real_route_blocks, load_active_branches, prepare_route_from_candidate
+from branches import BLOCKS, build_custom_route_block, build_real_route_blocks, load_active_branches, prepare_route_from_candidate
 from hamiltonian import analyze_block
 
 
@@ -52,6 +52,18 @@ def branches():
 @app.get("/api/route-blocks")
 def route_blocks():
     return jsonify(blocks=build_real_route_blocks())
+
+
+@app.post("/api/custom-block")
+def custom_block():
+    payload = request.get_json(silent=True) or {}
+    branch_ids = payload.get("branch_ids")
+    if not isinstance(branch_ids, list) or not all(isinstance(item, str) for item in branch_ids):
+        return jsonify(error="Se requiere una lista de códigos de sucursales."), 400
+    try:
+        return jsonify(block=build_custom_route_block(branch_ids))
+    except ValueError as error:
+        return jsonify(error=str(error)), 400
 
 
 @app.post("/api/prepare-route")

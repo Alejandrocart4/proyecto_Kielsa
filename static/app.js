@@ -1,7 +1,8 @@
 let branches = [], blockInfo = {}, baseBlocks = [], workingBlocks = [];
 let selectedZone = "A", activeFilter = "all", selectedId = null;
 let selectedCandidateId = "A";
-let map, Route, infoWindow, dashboardMarkers = [], candidateMarkers = [], routePolylines = [], lastCycle = null;
+let map, Route, infoWindow, dashboardMarkers = [], candidateMarkers = [], routePolylines = [], graphPolylines = [], lastCycle = null;
+let mapMode = "branches", technicalSelection = new Set();
 
 const $ = (id) => document.getElementById(id);
 const colors = { A: "#1677e8", B: "#11a65b", C: "#f5a900" };
@@ -69,6 +70,63 @@ function drawDashboardMarkers() {
     });
     dashboardMarkers.push(marker);
   });
+}
+
+function clearGraphLines() { graphPolylines.forEach((line) => line.setMap(null)); graphPolylines = []; }
+function drawCompleteGraph() {
+  clearGraphLines();
+  if (!map || activeFilter !== "all") return;
+  const nodes = new Map(branches.map((branch) => [branch.id, branch]));
+  baseBlocks.forEach((block) => {
+    const color = colors[block.id] || "#395a78";
+    block.edges.forEach((edge) => {
+      const from = nodes.get(edge.from), to = nodes.get(edge.to);
+      if (!valid(from) || !valid(to)) return;
+      graphPolylines.push(new google.maps.Polyline({ map, path: [{ lat:+from.lat, lng:+from.lng }, { lat:+to.lat, lng:+to.lng }], strokeColor: color, strokeOpacity: .82, strokeWeight: 3, clickable: false, zIndex: 2 }));
+    });
+  });
+}
+function setMapMode(mode) {
+  mapMode = mode;
+  document.querySelectorAll("#map-modes button").forEach((button) => button.classList.toggle("active", button.dataset.mode === mode));
+  clearGraphLines(); clearRouteLines();
+  if (mode === "graph") {
+    if (activeFilter !== "all") { $("circuit-message").textContent = "El grafo completo se muestra al seleccionar Todas las sucursales."; return; }
+    drawCompleteGraph(); $("circuit-message").textContent = "Grafo completo: se muestran todos los nodos y las conexiones de los bloques A, B y C.";
+  }
+  if (mode === "hamilton") { $("open-constructor").click(); }
+}
+
+function estimateKm(first, second) {
+  const toRad = (value) => value * Math.PI / 180;
+  const dLat = toRad(+second.lat - +first.lat), dLng = toRad(+second.lng - +first.lng);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(+first.lat)) * Math.cos(toRad(+second.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
+}
+function renderComparison() {
+  const reps = $("representatives");
+  reps.innerHTML = ["A", "B", "C"].map((zone) => `<label>Entrada del bloque ${zone}<select data-representative="${zone}">${blockBranches(zone).map((branch) => `<option value="${branch.id}">${escapeHtml(branch.name)}</option>`).join("")}</select></label>`).join("");
+  renderComparisonRows();
+}
+function renderComparisonRows() {
+  const representative = Object.fromEntries([...document.querySelectorAll("[data-representative]")].map((select) => [select.dataset.representative, branches.find((branch) => branch.id === select.value)]));
+  const values = Object.entries(candidates).map(([id, candidate]) => {
+    const legs = ["A", "B", "C"].map((zone) => estimateKm(candidate, representative[zone]));
+    return { id, candidate, legs, total: legs.reduce((sum, item) => sum + item, 0) };
+  });
+  const best = values.reduce((first, current) => current.total < first.total ? current : first);
+  $("comparison-rows").innerHTML = values.map((item) => `<tr class="${item.id === best.id ? "best-row" : ""}"><td><b>${escapeHtml(item.candidate.name)}</b></td>${item.legs.map((leg) => `<td>${leg.toFixed(2)} km</td>`).join("")}<td><b>${item.total.toFixed(2)} km</b></td><td>${item.candidate.price}</td><td>${item.id === best.id ? '<span class="result-best">Menor distancia estimada</span>' : '<span class="result-viable">Opción viable</span>'}</td></tr>`).join("");
+}
+function renderTechnicalPicker() {
+  $("technical-branches").innerHTML = branches.filter((branch) => activeFilter === "all" || branch.block === activeFilter).map((branch) => `<label><input type="checkbox" value="${branch.id}" ${technicalSelection.has(branch.id) ? "checked" : ""}>${escapeHtml(branch.id)} · ${escapeHtml(branch.name)}</label>`).join("");
+}
+async function createTechnicalBlock() {
+  const ids = [...document.querySelectorAll("#technical-branches input:checked")].map((input) => input.value);
+  const response = await fetch("/api/custom-block", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ branch_ids: ids }) });
+  const data = await response.json();
+  if (!response.ok) { $("status").textContent = data.error; return; }
+  const prepared = await (await fetch("/api/prepare-route", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ block: data.block, candidate: candidatePayload() }) })).json();
+  workingBlocks = [prepared.block]; selectedId = prepared.block.id; renderConstructor(); await analyze(); $("status").textContent = `Subgrafo técnico creado con ${ids.length} sucursales.`;
 }
 
 function drawCandidateMarkers() {
@@ -253,13 +311,14 @@ function bindEvents() {
     if (map && window.google) { google.maps.event.trigger(map, "resize"); fitToBranches(activeFilter === "all" ? branches : blockBranches(activeFilter)); }
   });
   $("search").addEventListener("input", renderBranchList);
+  $("map-modes").addEventListener("click", (event) => { const button = event.target.closest("button"); if (button) setMapMode(button.dataset.mode); });
   $("filters").addEventListener("click", (event) => {
     const button = event.target.closest("button"); if (!button) return;
     clearCircuitDisplay();
     activeFilter = button.dataset.filter;
     [...$("filters").querySelectorAll("button")].forEach((item) => item.classList.toggle("active", item === button));
     if (activeFilter !== "all") { selectedZone = activeFilter; selectedId = activeFilter; renderSelectedBlock(); renderConstructor(); }
-    renderBranchList(); drawDashboardMarkers();
+    renderBranchList(); drawDashboardMarkers(); clearGraphLines();
     fitToBranches(activeFilter === "all" ? branches : blockBranches(activeFilter));
   });
   $("branch-list").addEventListener("click", (event) => { const item = event.target.closest("[data-branch]"); const branch = branches.find((entry) => entry.id === item?.dataset.branch); if (branch && map && valid(branch)) { map.panTo({ lat: Number(branch.lat), lng: Number(branch.lng) }); map.setZoom(15); } });
@@ -267,11 +326,19 @@ function bindEvents() {
   $("open-constructor").addEventListener("click", () => { $("constructor").hidden = false; $("constructor").scrollIntoView({ behavior: "smooth" }); drawCircuitEdges(); });
   $("close-constructor").addEventListener("click", () => { $("constructor").hidden = true; clearRouteLines(); });
   $("candidate-button").addEventListener("click", () => $("candidates").scrollIntoView({ behavior: "smooth", block: "center" }));
+  $("candidate-button").addEventListener("click", () => { $("comparison").hidden = false; renderComparison(); $("comparison").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  $("close-comparison").addEventListener("click", () => $("comparison").hidden = true);
+  $("representatives").addEventListener("change", renderComparisonRows);
+  $("technical-button").addEventListener("click", () => { $("constructor").hidden = false; renderTechnicalPicker(); $("constructor").scrollIntoView({ behavior: "smooth", block: "start" }); });
   $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
   $("candidate-select").addEventListener("change", (event) => selectCandidate(event.target.value));
   $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); clearCircuitDisplay(); });
   $("analyze").addEventListener("click", analyze); $("roads").addEventListener("click", drawRoads);
   $("reset").addEventListener("click", async () => { const data = await (await fetch("/api/route-blocks")).json(); baseBlocks = data.blocks; selectedId = baseBlocks[0].id; await refreshCandidateRoutes(); });
+  $("technical-branches").addEventListener("change", (event) => { if (event.target.matches("input")) { event.target.checked ? technicalSelection.add(event.target.value) : technicalSelection.delete(event.target.value); } });
+  $("select-visible").addEventListener("click", () => { branches.filter((branch) => activeFilter === "all" || branch.block === activeFilter).forEach((branch) => technicalSelection.add(branch.id)); renderTechnicalPicker(); });
+  $("clear-selected").addEventListener("click", () => { technicalSelection.clear(); renderTechnicalPicker(); });
+  $("create-custom").addEventListener("click", createTechnicalBlock);
   $("node-form").addEventListener("submit", (event) => { event.preventDefault(); const name = $("node-name").value.trim(); if (!name) return; currentWork().nodes.push({ id: `N${Date.now()}`, name, lat: +$("node-lat").value || null, lng: +$("node-lng").value || null }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("edge-form").addEventListener("submit", (event) => { event.preventDefault(); const from = $("from").value, to = $("to").value, weight = +$("weight").value; if (from !== to && weight > 0 && !currentWork().edges.some((edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from))) currentWork().edges.push({ from, to, weight }); event.target.reset(); saveWorkingBlocks(); renderConstructor(); analyze(); });
   $("nodes").addEventListener("click", (event) => { const id = event.target.dataset.node; if (!id) return; currentWork().nodes = currentWork().nodes.filter((node) => node.id !== id); currentWork().edges = currentWork().edges.filter((edge) => edge.from !== id && edge.to !== id); saveWorkingBlocks(); renderConstructor(); analyze(); });

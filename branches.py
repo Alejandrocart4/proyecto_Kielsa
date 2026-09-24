@@ -128,6 +128,29 @@ def build_real_route_blocks() -> list[dict]:
     return route_blocks
 
 
+def build_custom_route_block(branch_ids: list[str]) -> dict:
+    """Construye un subgrafo editable a partir de las sucursales elegidas en modo técnico."""
+    selected_ids = list(dict.fromkeys(branch_ids))
+    all_branches = {branch["id"]: branch for branch in load_active_branches()}
+    selected = [all_branches[identifier] for identifier in selected_ids if identifier in all_branches and all_branches[identifier]["lat"] is not None]
+    if len(selected) < 3:
+        raise ValueError("Selecciona al menos tres sucursales para buscar un circuito hamiltoniano.")
+    ordered = _nearest_cycle(selected)
+    nodes = [{"id": branch["id"], "name": branch["name"], "lat": branch["lat"], "lng": branch["lng"]} for branch in ordered]
+    edges = [
+        {"from": origin["id"], "to": ordered[(index + 1) % len(ordered)]["id"], "weight": round(_distance_km(origin, ordered[(index + 1) % len(ordered)]), 2)}
+        for index, origin in enumerate(ordered)
+    ]
+    return {
+        "id": "tecnico",
+        "name": f"Subgrafo técnico ({len(nodes)} sucursales)",
+        "criterion": "Sucursales seleccionadas manualmente. Conexión inicial por cercanía geográfica.",
+        "weight_source": "Estimación inicial. Actualiza con Google Maps antes de presentar la ruta final.",
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
 def prepare_route_from_candidate(block: dict, candidate: dict) -> dict:
     """Inserta una sede en un ciclo de sucursales como salida y regreso.
 

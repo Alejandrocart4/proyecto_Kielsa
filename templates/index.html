@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Optimizador de rutas Kielsa SPS</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='visual.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='candidates.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='fullscreen.css') }}">
 </head>
 <body>
@@ -16,6 +18,7 @@
   <nav class="toolbar">
     <button class="primary" id="load-branches">▣ Cargar sucursales oficiales</button>
     <button class="plain" id="candidate-button">▥ Comparar sedes</button>
+    <button class="plain" id="technical-button">&lt;/&gt; Modo técnico</button>
   </nav>
 
   <main class="dashboard">
@@ -34,6 +37,11 @@
 
     <section class="map-wrap card">
       <div class="map-heading"><div><h2>Farmacias Kielsa SPS</h2><p>Distribución por bloques geográficos</p></div><span id="map-label">Bloques A, B y C</span></div>
+      <div class="map-modes" id="map-modes">
+        <button class="active" data-mode="branches">● Sucursales</button>
+        <button data-mode="graph">⌁ Grafo completo</button>
+        <button data-mode="hamilton">⌘ Hamiltoniano</button>
+      </div>
       <button class="fullscreen-map" id="fullscreen-map" title="Ver mapa en pantalla completa">⛶ Pantalla completa</button>
       <div id="map"></div>
       <div class="legend">
@@ -64,9 +72,22 @@
     </aside>
   </main>
 
+  <section class="comparison-shell" id="comparison" hidden>
+    <div class="comparison-head"><div><p>Evaluación de sede técnica</p><h2>Comparación de sedes candidatas</h2><span>Selecciona la sucursal representativa de cada bloque para comparar las opciones.</span></div><button id="close-comparison">Cerrar ×</button></div>
+    <div class="venue-cards">
+      <article class="venue-card"><div class="venue-image" id="venue-image-A">Imagen de Galería Guamilito</div><div><h3>Galería Guamilito</h3><span>Centro · 8 calle, 7 avenida NO</span><b>L. 7,000/mes</b><p>Agua, luz y baño privado.</p></div></article>
+      <article class="venue-card"><div class="venue-image" id="venue-image-B">Imagen de Plaza Los Caminantes</div><div><h3>Plaza Los Caminantes</h3><span>Norte · GX69+R28, SPS</span><b>L. 11,800/mes</b><p>Agua y seguridad.</p></div></article>
+      <article class="venue-card"><div class="venue-image" id="venue-image-C">Imagen de Plaza Trejo</div><div><h3>Plaza Trejo</h3><span>Oeste · 10 calle, 23 avenida S</span><b>USD 2,868/mes</b><p>Parqueo y seguridad 24/7.</p></div></article>
+    </div>
+    <div class="comparison-controls" id="representatives"></div>
+    <div class="comparison-table-wrap"><table><thead><tr><th>Sede</th><th>Entrada bloque A</th><th>Entrada bloque B</th><th>Entrada bloque C</th><th>Total estimado</th><th>Costo mensual</th><th>Resultado</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
+    <p class="comparison-note">Las distancias son estimaciones geográficas para comparar alternativas. Los kilómetros finales se actualizan con Google Maps Routes API.</p>
+  </section>
+
   <section class="constructor-shell" id="constructor" hidden>
     <div class="constructor-head"><div><p>Configuración técnica</p><h2>Constructor editable de circuitos</h2><span>Python verifica el circuito. Google Maps dibuja y actualiza los pesos viales.</span></div><button id="close-constructor">Cerrar ×</button></div>
     <div class="controls"><label>Bloque real <select id="block"></select></label><label>Sede de inicio y regreso <select id="candidate-select"><option value="A">Galería Guamilito</option><option value="B">Plaza Los Caminantes</option><option value="C">Plaza Trejo</option></select></label><label>Inicio y final <select id="start" disabled></select></label><button id="analyze">Buscar circuito</button><button class="secondary" id="reset">Restaurar bloques reales</button></div>
+    <section class="technical-picker"><div><h3>Selección de sucursales para el subgrafo técnico</h3><p>Marca al menos tres sucursales. El programa crea las conexiones iniciales y busca el circuito desde la sede seleccionada.</p></div><div class="picker-actions"><button id="select-visible" type="button">Seleccionar visibles</button><button id="clear-selected" type="button">Limpiar</button><button id="create-custom" type="button">Crear subgrafo y buscar circuito</button></div><div id="technical-branches" class="technical-branches"></div></section>
     <div class="editor-grid">
       <article class="editor-card"><h3>Nodos</h3><form id="node-form"><input id="node-name" placeholder="Nombre de farmacia" required><input id="node-lat" type="number" step="any" placeholder="Latitud"><input id="node-lng" type="number" step="any" placeholder="Longitud"><button>Agregar</button></form><ul id="nodes"></ul></article>
       <article class="editor-card"><h3>Aristas y pesos</h3><form id="edge-form"><select id="from"></select><select id="to"></select><input id="weight" type="number" step="0.01" min="0.01" placeholder="km" required><button>Agregar</button></form><div id="edges"></div></article>
