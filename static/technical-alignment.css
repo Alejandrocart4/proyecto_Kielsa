@@ -1,0 +1,6 @@
+/* Las fracciones reservan espacio para las separaciones entre las tres columnas. */
+@media (min-width: 1101px) {
+  .technical-layout {
+    grid-template-columns: minmax(0, 29fr) minmax(0, 44fr) minmax(0, 27fr);
+  }
+}

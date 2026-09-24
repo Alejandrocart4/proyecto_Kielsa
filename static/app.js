@@ -160,6 +160,15 @@ function renderTechnicalPage() {
 function renderTechnicalResults(data = null) {
   if (!data?.cycle) return;
   const names = new Map(currentWork().nodes.map((node) => [node.id, node.name]));
+  const criteria = data.criteria;
+  const degree = Math.min(...Object.values(criteria.degrees));
+  const yesNo = (value) => value ? "Sí ✓" : "No";
+  $("technical-result-total-nodes").textContent = criteria.n;
+  $("technical-result-edges").textContent = currentWork().edges.length;
+  $("technical-result-degree").textContent = degree;
+  $("technical-result-connected").textContent = yesNo(criteria.connected);
+  $("technical-result-dirac").textContent = yesNo(criteria.dirac);
+  $("technical-result-ore").textContent = yesNo(criteria.ore);
   $("technical-result-cycle").textContent = "Encontrado ✓";
   $("technical-result-distance").textContent = `${data.cycle.total_weight.toFixed(2)} km`;
   $("technical-result-nodes").textContent = data.cycle.path.length - 1;
@@ -229,14 +238,20 @@ function drawCandidateMarkers() {
   });
 }
 
-function selectCandidate(id) {
+async function selectCandidate(id, drawCircuitOnMainMap = false) {
   selectedCandidateId = id;
   const candidate = candidates[id];
+  if (drawCircuitOnMainMap) {
+    mapMode = "hamilton";
+    document.querySelectorAll("#map-modes button").forEach((button) => button.classList.toggle("active", button.dataset.mode === "hamilton"));
+    clearGraphLines();
+  }
   document.querySelectorAll(".candidate").forEach((card) => card.classList.toggle("active", card.dataset.candidate === id));
   if ($("candidate-select")) $("candidate-select").value = id;
   drawCandidateMarkers();
-  if (baseBlocks.length) refreshCandidateRoutes();
+  if (baseBlocks.length) await refreshCandidateRoutes();
   if (!map) return;
+  if (drawCircuitOnMainMap) { fitToBranches(currentWork()?.nodes || blockBranches(selectedZone)); return; }
   map.panTo({ lat: candidate.lat, lng: candidate.lng });
   map.setZoom(15);
   infoWindow.setContent(`<b>${candidate.name}</b><br>${candidate.price}`);
@@ -374,7 +389,7 @@ function addRouteLine(from, to, km) {
   routePolylines.push(line);
 }
 function drawCircuitEdges() {
-  if (!map || !lastCycle || ($("constructor").hidden && $("technical-page").hidden)) return;
+  if (!map || !lastCycle || ($("constructor").hidden && $("technical-page").hidden && mapMode !== "hamilton")) return;
   const nodes = new Map(currentWork().nodes.map((node) => [node.id, node]));
   const legs = lastCycle.path.slice(0, -1).map((from, index) => [from, lastCycle.path[index + 1]]);
   clearRouteLines();
@@ -441,7 +456,7 @@ function bindEvents() {
   $("technical-run").addEventListener("click", runTechnicalCircuit);
   $("technical-search").addEventListener("input", (event) => { const text = event.target.value.toLowerCase(); document.querySelectorAll("#technical-page-branches label").forEach((label) => label.hidden = !label.textContent.toLowerCase().includes(text)); });
   $("technical-fullscreen").addEventListener("click", () => $("technical-map-host").requestFullscreen());
-  $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) openCandidateModal(card.dataset.candidate); });
+  $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate, true); });
   $("comparison").addEventListener("click", (event) => { const card = event.target.closest(".venue-card[data-candidate]"); if (card) openCandidateModal(card.dataset.candidate); });
   $("close-candidate-modal").addEventListener("click", closeCandidateModal);
   $("show-candidate-map").addEventListener("click", showCandidateOnMap);

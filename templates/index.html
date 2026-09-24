@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='candidates.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='venue-images.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='technical-page.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='technical-alignment.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='technical-map-override.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='block-summary.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='technical-mode.css') }}">
@@ -84,7 +85,7 @@
     <div class="technical-layout">
       <section class="technical-list"><div class="technical-list-head"><h3>Sucursales disponibles del bloque</h3><b id="technical-count">0 seleccionadas</b></div><label class="search"><span>⌕</span><input id="technical-search" placeholder="Buscar sucursal del bloque..."></label><p class="technical-info">Solo se muestran las sucursales que pertenecen al bloque elegido.</p><div id="technical-page-branches" class="technical-page-branches"></div></section>
       <section class="technical-map-panel"><div class="technical-map-head"><div><h3>Mapa del circuito</h3><p id="technical-map-message">Seleccione sucursales y construya el circuito.</p></div><button id="technical-fullscreen">⛶ Pantalla completa</button></div><div id="technical-map-host"></div><div class="technical-legend">● Sucursales seleccionadas &nbsp; ━ Circuito Hamiltoniano &nbsp; ★ Sede candidata</div></section>
-      <aside class="technical-results"><section><h3>✓ Validación del circuito</h3><p>Bloque seleccionado: <b id="technical-result-block">—</b></p><p>Sede candidata: <b id="technical-result-candidate">—</b></p><p>Sucursales seleccionadas: <b id="technical-result-count">0</b></p></section><section><h3>▥ Resultado del análisis</h3><p>Circuito Hamiltoniano: <b id="technical-result-cycle">Pendiente</b></p><p>Distancia total: <b id="technical-result-distance">—</b></p><p>Nodos visitados: <b id="technical-result-nodes">0</b></p><p>Inicio y regreso: <b id="technical-result-return">—</b></p></section><section><h3>Orden de visita</h3><ol id="technical-order"></ol></section></aside>
+      <aside class="technical-results"><section><h3>✓ Validación del circuito</h3><p>Bloque seleccionado: <b id="technical-result-block">—</b></p><p>Sede candidata: <b id="technical-result-candidate">—</b></p><p>Sucursales seleccionadas: <b id="technical-result-count">0</b></p></section><section><h3>▥ Resultado del análisis</h3><p>Número de nodos: <b id="technical-result-total-nodes">—</b></p><p>Aristas del subgrafo: <b id="technical-result-edges">—</b></p><p>Grado mínimo δ(G): <b id="technical-result-degree">—</b></p><p>Grafo conexo: <b id="technical-result-connected">—</b></p><p>Criterio de Dirac: <b id="technical-result-dirac">—</b></p><p>Criterio de Ore: <b id="technical-result-ore">—</b></p><p>Circuito Hamiltoniano: <b id="technical-result-cycle">Pendiente</b></p><p>Distancia total: <b id="technical-result-distance">—</b></p><p>Nodos visitados: <b id="technical-result-nodes">0</b></p><p>Inicio y regreso: <b id="technical-result-return">—</b></p></section><section><h3>Orden de visita</h3><ol id="technical-order"></ol></section></aside>
     </div>
     <p class="technical-footer">El modo técnico prueba escenarios controlados por bloque y valida circuitos hamiltonianos sin mezclar sucursales de otras zonas.</p>
   </section>
@@ -119,5 +120,6 @@
   <footer>Fuente de sucursales: listado oficial de Kielsa SPS · Pesos viales: Google Maps Routes API</footer>
   <script>window.MAPS_KEY={{ maps_key|tojson }};</script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="{{ url_for('static', filename='block-verification.js') }}"></script>
 </body>
 </html>
