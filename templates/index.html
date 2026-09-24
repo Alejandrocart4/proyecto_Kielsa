@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='technical-map-override.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='block-summary.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='technical-mode.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='candidate-modal.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='fullscreen.css') }}">
 </head>
 <body>
@@ -91,9 +92,9 @@
   <section class="comparison-shell" id="comparison" hidden>
     <div class="comparison-head"><div><p>Evaluación de sede técnica</p><h2>Comparación de sedes candidatas</h2><span>Selecciona la sucursal representativa de cada bloque para comparar las opciones.</span></div><button id="close-comparison">Cerrar ×</button></div>
     <div class="venue-cards">
-      <article class="venue-card"><img class="venue-image" src="{{ url_for('image', filename='Guamilito.jpeg') }}" alt="Edificio de Galería Guamilito"><div><h3>Galería Guamilito</h3><span>Centro · 8 calle, 7 avenida NO</span><b>L. 7,000/mes</b><p>Agua, luz y baño privado.</p></div></article>
-      <article class="venue-card"><img class="venue-image" src="{{ url_for('image', filename='caminantes.jpeg') }}" alt="Edificio de Plaza Los Caminantes"><div><h3>Plaza Los Caminantes</h3><span>Norte · GX69+R28, SPS</span><b>L. 11,800/mes</b><p>Agua y seguridad.</p></div></article>
-      <article class="venue-card"><img class="venue-image" src="{{ url_for('image', filename='Trejo.jpeg') }}" alt="Edificio de Plaza Trejo"><div><h3>Plaza Trejo</h3><span>Oeste · 10 calle, 23 avenida S</span><b>USD 2,868/mes</b><p>Parqueo y seguridad 24/7.</p></div></article>
+      <article class="venue-card" data-candidate="A"><img class="venue-image" src="{{ url_for('image', filename='Guamilito.jpeg') }}" alt="Edificio de Galería Guamilito"><div><h3>Galería Guamilito</h3><span>Centro · 8 calle, 7 avenida NO</span><b>L. 7,000/mes</b><p>Agua, luz y baño privado.</p></div></article>
+      <article class="venue-card" data-candidate="B"><img class="venue-image" src="{{ url_for('image', filename='caminantes.jpeg') }}" alt="Edificio de Plaza Los Caminantes"><div><h3>Plaza Los Caminantes</h3><span>Norte · GX69+R28, SPS</span><b>L. 11,800/mes</b><p>Agua y seguridad.</p></div></article>
+      <article class="venue-card" data-candidate="C"><img class="venue-image" src="{{ url_for('image', filename='Trejo.jpeg') }}" alt="Edificio de Plaza Trejo"><div><h3>Plaza Trejo</h3><span>Oeste · 10 calle, 23 avenida S</span><b>USD 2,868/mes</b><p>Parqueo y seguridad 24/7.</p></div></article>
     </div>
     <div class="comparison-controls" id="representatives"></div>
     <div class="comparison-table-wrap"><table><thead><tr><th>Sede</th><th>Entrada bloque A</th><th>Entrada bloque B</th><th>Entrada bloque C</th><th>Total estimado</th><th>Costo mensual</th><th>Resultado</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
@@ -110,6 +111,10 @@
     </div>
     <div class="result-row" hidden><div id="result"></div><button class="green" id="roads">Actualizar pesos reales con Google Maps</button><p id="status"></p></div>
   </section>
+
+  <div class="candidate-modal" id="candidate-modal" hidden role="dialog" aria-modal="true" aria-labelledby="candidate-modal-name">
+    <div class="candidate-modal-card"><button id="close-candidate-modal" class="candidate-modal-close" aria-label="Cerrar">×</button><img id="candidate-modal-image" alt=""><div class="candidate-modal-copy"><p id="candidate-modal-zone"></p><h2 id="candidate-modal-name"></h2><span id="candidate-modal-address"></span><strong id="candidate-modal-price"></strong><p id="candidate-modal-services"></p><button id="show-candidate-map">⌖ Mirar en el mapa</button></div></div>
+  </div>
 
   <footer>Fuente de sucursales: listado oficial de Kielsa SPS · Pesos viales: Google Maps Routes API</footer>
   <script>window.MAPS_KEY={{ maps_key|tojson }};</script>

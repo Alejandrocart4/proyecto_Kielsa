@@ -11,6 +11,11 @@ const candidates = {
   B: { name: "Plaza Los Caminantes", lat: 15.5122975, lng: -88.03203119, price: "L. 11,800/mes" },
   C: { name: "Plaza Trejo", lat: 15.4980516, lng: -88.0461595, price: "USD 2,868/mes" },
 };
+const candidateDetails = {
+  A: { zone: "Centro", address: "8 calle, 7 avenida NO, Guamilito", services: "Agua, luz y baño privado.", image: "/imagenes/Guamilito.jpeg" },
+  B: { zone: "Norte", address: "Plaza Los Caminantes, San Pedro Sula", services: "Agua y seguridad.", image: "/imagenes/caminantes.jpeg" },
+  C: { zone: "Oeste", address: "10 calle, 23 avenida S, Plaza Trejo", services: "Parqueo y seguridad 24/7.", image: "/imagenes/Trejo.jpeg" },
+};
 const currentWork = () => workingBlocks.find((item) => item.id === selectedId);
 const valid = (node) => Number.isFinite(Number(node?.lat)) && Number.isFinite(Number(node?.lng)) && !(Number(node.lat) === 0 && Number(node.lng) === 0);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
@@ -238,6 +243,26 @@ function selectCandidate(id) {
   infoWindow.setPosition({ lat: candidate.lat, lng: candidate.lng });
   infoWindow.open({ map });
 }
+function openCandidateModal(id) {
+  const candidate = candidates[id], detail = candidateDetails[id];
+  $("candidate-modal").dataset.candidate = id;
+  $("candidate-modal-image").src = detail.image;
+  $("candidate-modal-image").alt = `Edificio de ${candidate.name}`;
+  $("candidate-modal-zone").textContent = `Sede candidata · ${detail.zone}`;
+  $("candidate-modal-name").textContent = candidate.name;
+  $("candidate-modal-address").textContent = detail.address;
+  $("candidate-modal-price").textContent = candidate.price;
+  $("candidate-modal-services").textContent = detail.services;
+  $("candidate-modal").hidden = false;
+}
+function closeCandidateModal() { $("candidate-modal").hidden = true; }
+function showCandidateOnMap() {
+  const id = $("candidate-modal").dataset.candidate;
+  closeCandidateModal();
+  if (!$("technical-page").hidden) closeTechnicalPage();
+  activeFilter = "all"; setMapMode("branches"); selectCandidate(id);
+  document.querySelector(".map-wrap").scrollIntoView({ behavior: "smooth", block: "center" });
+}
 
 function fitToBranches(items) {
   if (!map) return;
@@ -416,7 +441,11 @@ function bindEvents() {
   $("technical-run").addEventListener("click", runTechnicalCircuit);
   $("technical-search").addEventListener("input", (event) => { const text = event.target.value.toLowerCase(); document.querySelectorAll("#technical-page-branches label").forEach((label) => label.hidden = !label.textContent.toLowerCase().includes(text)); });
   $("technical-fullscreen").addEventListener("click", () => $("technical-map-host").requestFullscreen());
-  $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) selectCandidate(card.dataset.candidate); });
+  $("candidates").addEventListener("click", (event) => { const card = event.target.closest("[data-candidate]"); if (card) openCandidateModal(card.dataset.candidate); });
+  $("comparison").addEventListener("click", (event) => { const card = event.target.closest(".venue-card[data-candidate]"); if (card) openCandidateModal(card.dataset.candidate); });
+  $("close-candidate-modal").addEventListener("click", closeCandidateModal);
+  $("show-candidate-map").addEventListener("click", showCandidateOnMap);
+  $("candidate-modal").addEventListener("click", (event) => { if (event.target === $("candidate-modal")) closeCandidateModal(); });
   $("candidate-select").addEventListener("change", (event) => selectCandidate(event.target.value));
   $("block").addEventListener("change", (event) => { selectedId = event.target.value; renderConstructor(); clearCircuitDisplay(); });
   $("analyze").addEventListener("click", analyze); $("roads").addEventListener("click", drawRoads);
